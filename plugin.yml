@@ -1,0 +1,20 @@
+name: Guerrilla
+main: ds.guerrilla.Guerrilla
+version: 0.2
+commands:
+   gc:
+      description: Toggles guerrilla chat
+      usage: /gc
+      permission:
+   g:
+     description: 
+     usage: type /g help [page] for more info
+     permission:      
+   guerrilla:
+     description: 
+     usage: type /guerrilla help [page] for more info
+     permission: 
+   gmakemap:
+     description:
+     usage:
+     permission:

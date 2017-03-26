@@ -1,0 +1,35 @@
+#itemid: id del item con que se pagar�n los chunks al conquistarlos inicialmente
+#chunkprice: precio por conquistar chunk inicialmente
+#paymenttime: hora dentro del juego 00000 (amanecer) 12000(atardecer) a la que se cobran los pagos
+#iditemmaintennance: id del item que se buscar� en los cofres para los pagos de mantenimiento
+#chunkmaintennanceprice: precio que se cobra al dia de minecraft por chunk
+#gworldname: nombre del mundo en que funcionar� el guerrilla
+#conquestdelay: tiempo que se tardar� en conquistar un territorio enemigo en ticks de juego (20 ticks = 1 segundo)
+#conquestpricemultiplier: factor por el que se multiplica el precio normal de un chunk inicialmente para conseguir el precio de conquista de un chunk enemigo (tiene que ser un numero natural)
+#defenderdamagetakendivider: factor por el que se divide el da�o que recibe un defensor en su territorio
+#defenderdamagedealtmultiplier: multiplicador de da�o que se aplica cuando un defensor ataca a un enemigo en el territorio del defensor
+#nchunksminmaintenance: numero de chunks a partir del cual se empieza a cobrar (9 o menos son gratis en mantenimiento)
+#ismatchwon: indica si ha ganado alguien la partida, para resetearlo
+#winner: indica el nombre de la guerrilla que ha ganado, si ha ganado alguien
+#miniumplayersforasafechest: numero minimo de jugadores que tiene que haber en una guerrilla para que puedan crear un cofre seguro
+#guerrillaexpirytime: tiempo en (milisegundos? no me acuerdo) en que una faccion tarda en marcarse como inactiva y desaparecer (y con ella sus territorios)
+#explosionProtection: protecci�n de explosiones en territorio conquistado (true=encendido, false=apagado)
+guerrilla:
+    itemid: 296
+    chunkprice: 10
+    paymenttime: 23999
+    iditemmaintennance: 296
+    chunkmaintennanceprice: 1
+    gworldname: world
+    conquestdelay: 6000
+    conquestpricemultiplier: 2
+    defenderdamagetakendivider: 2
+    defenderdamagedealtmultiplier: 1
+    nchunksminmaintenance: 10
+    ismatchwon: false
+    maxmaintenanceprice: 64
+    chunkobjective: 800
+    winner: ''
+    miniumplayersforasafechest: 2
+    guerrillaexpirytime: 604800000
+    explostionProtection: true
