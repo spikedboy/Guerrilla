@@ -1,5 +1,5 @@
 name: Guerrilla
-main: ds.guerrilla.Guerrilla
+main: net.spikedboy.guerrilla.Guerrilla
 version: 0.2
 commands:
    gc:
