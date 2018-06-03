@@ -1,34 +1,43 @@
 package net.spikedboy.guerrilla.listeners;
 
-import net.spikedboy.guerrilla.Guerrilla;
+import com.google.inject.Inject;
 import net.spikedboy.guerrilla.GuerrillaPlugin;
 import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
+import net.spikedboy.guerrilla.guerrilla.Guerrilla;
+import net.spikedboy.guerrilla.guerrilla.GuerrillaManager;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldSaveEvent;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 public class GuerrillaWorldListener implements Listener {
 
-    public GuerrillaWorldListener(GuerrillaPlugin inPlug) {
-        GuerrillaPlugin plugin = inPlug;
-    }
+    private static final Logger LOGGER = Logger.getLogger("Minecraft");
 
+    private final GuerrillaPlugin guerrillaPlugin;
+
+    @Inject
+    private GuerrillaManager guerrillaManager;
+
+    public GuerrillaWorldListener(GuerrillaPlugin inPlug) {
+        guerrillaPlugin = inPlug;
+    }
 
     @EventHandler
     public void onWorldSave(WorldSaveEvent event) {
         try {
-            //GuerrillaPlugin.log.info("[GuerrillaPlugin] Saving..");
-            for (Guerrilla guerrilla : Guerrilla.guerrillaList) {
+            //GuerrillaPlugin.LOGGER.info("[Guerrilla] Saving..");
+            for (Guerrilla guerrilla : guerrillaManager.getGuerrillaList()) {
                 for (ArrayList<Integer> chestc : guerrilla.paymentChests) {
-                    if (GuerrillaPlugin.serverInstance.getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestc.get(0).intValue(),
-                            chestc.get(1).intValue(), chestc.get(2).intValue()).getType() != Material.CHEST) {
+                    if (guerrillaPlugin.getServer().getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestc.get(0),
+                            chestc.get(1), chestc.get(2)).getType() != Material.CHEST) {
 
                         guerrilla.paymentChests.remove(chestc);
-                        guerrilla.msggue("A missing paymentchest was removed");
-                        GuerrillaPlugin.log.info("[GuerrillaPlugin] A paymentchest was removed because the chest was missing");
+                        guerrilla.msggue("A missing payment chest was removed");
+                        LOGGER.info("[Guerrilla] A payment chest was removed because the chest was missing");
                     }
                 }
             }
@@ -39,5 +48,7 @@ public class GuerrillaWorldListener implements Listener {
         }
     }
 
-
+    public void setGuerrillaManager(GuerrillaManager guerrillaManager) {
+        this.guerrillaManager = guerrillaManager;
+    }
 }

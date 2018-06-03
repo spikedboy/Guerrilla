@@ -1,8 +1,10 @@
 package net.spikedboy.guerrilla.listeners;
 
-import net.spikedboy.guerrilla.Guerrilla;
+import com.google.inject.Inject;
 import net.spikedboy.guerrilla.GuerrillaPlugin;
 import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
+import net.spikedboy.guerrilla.guerrilla.Guerrilla;
+import net.spikedboy.guerrilla.guerrilla.GuerrillaManager;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -21,7 +23,10 @@ import java.util.logging.Logger;
 
 public class GuerrillaEntityListener implements Listener {
 
-    Logger log = Logger.getLogger("Minecraft");
+    private Logger log = Logger.getLogger("Minecraft");
+
+    @Inject
+    private GuerrillaManager guerrillaManager;
 
     public GuerrillaEntityListener(GuerrillaPlugin inPlug) {
         GuerrillaPlugin plugin = inPlug;
@@ -31,14 +36,14 @@ public class GuerrillaEntityListener implements Listener {
     public void onEntityExplode(EntityExplodeEvent event) {
         for (Block block : event.blockList()) {
             Chunk chunk = block.getChunk();
-            Guerrilla owner = Guerrilla.getGuerrillaChunk(chunk);
+            Guerrilla owner = guerrillaManager.getGuerrillaChunk(chunk);
             if (block.getType() == Material.CHEST) {
-                if (Guerrilla.getGuerrillaSafeChest((Chest) block.getState()) != null) {
+                if (guerrillaManager.getGuerrillaSafeChest((Chest) block.getState()) != null) {
                     event.setCancelled(true);
                     return;
                 }
             }
-            if (Guerrilla.isSafeChunk(chunk)) {
+            if (guerrillaManager.isSafeChunk(chunk)) {
                 event.setCancelled(true);
                 return;
             }
@@ -69,12 +74,12 @@ public class GuerrillaEntityListener implements Listener {
                 Player pdamager = (Player) damager;
                 Chunk damageechunk = pdamagee.getLocation().getBlock().getChunk();
                 //Chunk damagerchunk = pdamager.getLocation().getBlock().getChunk();
-                Guerrilla damageechunkguerrilla = Guerrilla.getGuerrillaChunk(pdamagee.getLocation().getBlock().getChunk());
-                Guerrilla damagerchunkguerrilla = Guerrilla.getGuerrillaChunk(pdamager.getLocation().getBlock().getChunk());
-                Guerrilla gpdamagee = Guerrilla.getPlayerGuerrilla(pdamagee);
-                Guerrilla gpdamager = Guerrilla.getPlayerGuerrilla(pdamager);
+                Guerrilla damageechunkguerrilla = guerrillaManager.getGuerrillaChunk(pdamagee.getLocation().getBlock().getChunk());
+                Guerrilla damagerchunkguerrilla = guerrillaManager.getGuerrillaChunk(pdamager.getLocation().getBlock().getChunk());
+                Guerrilla gpdamagee = guerrillaManager.getPlayerGuerrilla(pdamagee);
+                Guerrilla gpdamager = guerrillaManager.getPlayerGuerrilla(pdamager);
 
-                if (Guerrilla.isSafeChunk(damageechunk)) {
+                if (guerrillaManager.isSafeChunk(damageechunk)) {
                     event.setCancelled(true);
                     return;
                 }
@@ -103,4 +108,7 @@ public class GuerrillaEntityListener implements Listener {
         }
     }
 
+    public void setGuerrillaManager(GuerrillaManager guerrillaManager) {
+        this.guerrillaManager = guerrillaManager;
+    }
 }

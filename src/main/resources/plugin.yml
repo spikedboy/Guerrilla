@@ -2,7 +2,7 @@ name: GuerrillaPlugin
 guerrillaPlugin: net.spikedboy.guerrilla.GuerrillaPlugin
 commands:
    gc:
-      description: Toggles guerrillaPlugin chat
+      description: Toggles guerrilla chat
       usage: /gc
       permission:
    g:
@@ -11,7 +11,7 @@ commands:
      permission:      
    guerrillaPlugin:
      description: 
-     usage: type /guerrillaPlugin help [page] for more info
+     usage: type /guerrilla help [page] for more info
      permission: 
    gmakemap:
      description:

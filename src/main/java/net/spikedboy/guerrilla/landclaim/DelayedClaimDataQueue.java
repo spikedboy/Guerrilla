@@ -1,6 +1,6 @@
 package net.spikedboy.guerrilla.landclaim;
 
-import net.spikedboy.guerrilla.Guerrilla;
+import net.spikedboy.guerrilla.guerrilla.Guerrilla;
 
 import java.util.ArrayList;
 

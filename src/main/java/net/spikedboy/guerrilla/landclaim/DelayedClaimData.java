@@ -1,12 +1,12 @@
 package net.spikedboy.guerrilla.landclaim;
 
-import net.spikedboy.guerrilla.Guerrilla;
+import net.spikedboy.guerrilla.guerrilla.Guerrilla;
 
 import java.util.ArrayList;
 
 public class DelayedClaimData {
 
-    private ArrayList<Double> chunk;
+    private ArrayList<Integer> chunk;
     private Guerrilla guerrillaClaimer;
     private Guerrilla guerrillaOwner;
     private String claimerName;
@@ -31,7 +31,7 @@ public class DelayedClaimData {
         subsequentNode = null;
     }
 
-    public ArrayList<Double> getChunk() {
+    public ArrayList<Integer> getChunk() {
         return chunk;
     }
 
@@ -51,7 +51,7 @@ public class DelayedClaimData {
         return threadID;
     }
 
-    public void setChunk(ArrayList<Double> chunk) {
+    public void setChunk(ArrayList<Integer> chunk) {
         this.chunk = chunk;
     }
 
