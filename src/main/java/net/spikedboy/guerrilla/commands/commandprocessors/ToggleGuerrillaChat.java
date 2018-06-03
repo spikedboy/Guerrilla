@@ -1,0 +1,49 @@
+package net.spikedboy.guerrilla.commands.commandprocessors;
+
+import com.google.inject.Inject;
+import net.spikedboy.guerrilla.GuerrillaPlugin;
+import net.spikedboy.guerrilla.commands.CommandProcessor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
+import java.util.Map;
+
+public class ToggleGuerrillaChat implements CommandProcessor {
+
+    private GuerrillaPlugin guerrillaPlugin;
+
+    @Override
+    public Boolean processCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+        //definitions
+        Player playurd = (Player) sender;
+
+        if (commandLabel.equalsIgnoreCase("gc")) {
+            if (guerrillaPlugin != null) {
+                if (args.length < 1) {
+                    Map<String, Boolean> togglePlayerChat = GuerrillaPlugin.togglePlayerChat;
+                    if (togglePlayerChat.get(playurd.getName()) == null || togglePlayerChat.get(playurd.getName()) == false) {
+                        togglePlayerChat.put(playurd.getName(), true);
+                        playurd.sendMessage(GuerrillaPlugin.gCh + "GuerrillaPlugin chat enabled");
+                    } else if (togglePlayerChat.get(playurd.getName()) == true) {
+                        togglePlayerChat.put(playurd.getName(), false);
+                        playurd.sendMessage(GuerrillaPlugin.gCh + "GuerrillaPlugin chat disabled");
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                playurd.sendMessage(GuerrillaPlugin.gCh + "You have no guerrillaPlugin");
+                return true;
+            }
+        }
+
+        return null;
+    }
+
+    @Inject
+    public void setGuerrillaPlugin(GuerrillaPlugin guerrillaPlugin) {
+        this.guerrillaPlugin = guerrillaPlugin;
+    }
+}

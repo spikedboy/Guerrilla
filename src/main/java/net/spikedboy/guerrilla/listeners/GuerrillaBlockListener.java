@@ -1,7 +1,7 @@
-package net.spikedboy.guerrilla;
+package net.spikedboy.guerrilla.listeners;
 
-import java.util.logging.Logger;
-
+import net.spikedboy.guerrilla.Guerrilla;
+import net.spikedboy.guerrilla.GuerrillaPlugin;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,20 +16,21 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.util.Vector;
 
+import java.util.logging.Logger;
+
 public class GuerrillaBlockListener implements Listener {
 
-    public static Guerrilla plugin;
     Logger log = Logger.getLogger("Minecraft");
 
-    GuerrillaBlockListener(Guerrilla inPlug) {
-        plugin = inPlug;
+    public GuerrillaBlockListener(GuerrillaPlugin inPlug) {
+        GuerrillaPlugin plugin = inPlug;
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockPlace(BlockPlaceEvent event) {
-        GuerrillaG guerrilla = GuerrillaG.getPlayerGuerrilla(event.getPlayer());
+        Guerrilla guerrilla = Guerrilla.getPlayerGuerrilla(event.getPlayer());
         Chunk chunk = event.getBlock().getChunk();
-        GuerrillaG guerrillao = GuerrillaG.getGuerrillaChunk(chunk);
+        Guerrilla guerrillao = Guerrilla.getGuerrillaChunk(chunk);
         Player player = event.getPlayer();
         // Vector vec = player.getVelocity();
         Location loc = player.getLocation();
@@ -76,7 +77,7 @@ public class GuerrillaBlockListener implements Listener {
 
 	/*
      * public void onBlockPistonExtend(BlockPistonExtendEvent event) { if
-	 * (GuerrillaG
+	 * (Guerrilla
 	 * .getGuerrillaChunk(event.getBlock().getRelative(event.getDirection(),
 	 * 1).getChunk()) {
 	 * 
@@ -89,15 +90,15 @@ public class GuerrillaBlockListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockBreak(BlockBreakEvent event) {
         Block eblock = event.getBlock();
-        GuerrillaG guerrilla = GuerrillaG.getPlayerGuerrilla(event.getPlayer()); //GuerrillaG object of the player that has broke the block
+        Guerrilla guerrilla = Guerrilla.getPlayerGuerrilla(event.getPlayer()); //Guerrilla object of the player that has broke the block
         Chunk chunk = event.getBlock().getChunk();
-        GuerrillaG guerrillao = GuerrillaG.getGuerrillaChunk(chunk); //GuerrillaG object propietary of the chunk in which the block is in
+        Guerrilla guerrillao = Guerrilla.getGuerrillaChunk(chunk); //Guerrilla object propietary of the chunk in which the block is in
         Player player = event.getPlayer();
 
         if (eblock.getType() == Material.CHEST) {
 
             Chest chest = (Chest) eblock.getState();
-            GuerrillaG guchest = GuerrillaG.getGuerrillaSafeChest(chest);
+            Guerrilla guchest = Guerrilla.getGuerrillaSafeChest(chest);
             String leadero = null;
 
             if (guchest != null) {
@@ -106,16 +107,16 @@ public class GuerrillaBlockListener implements Listener {
             if (leadero != null) {
                 if ((!(leadero.equals(player.getName())))) {
 
-                    if (Guerrilla.sinst.getPlayer(leadero) != null)
-                        Guerrilla.sinst
+                    if (GuerrillaPlugin.serverInstance.getPlayer(leadero) != null)
+                        GuerrillaPlugin.serverInstance
                                 .getPlayer(leadero)
                                 .sendMessage(
-                                        Guerrilla.gCh
+                                        GuerrillaPlugin.gCh
                                                 + "Someone tried to break your safechest!");
                     event.setCancelled(true);
 
                 } else if (leadero.equals(player.getName())) {
-                    player.sendMessage(Guerrilla.gCh
+                    player.sendMessage(GuerrillaPlugin.gCh
                             + "Sorry! You can't do that! Safe chests are safe! From everyone!");
                     event.setCancelled(true);
                 }

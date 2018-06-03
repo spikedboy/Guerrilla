@@ -1,18 +1,17 @@
-name: Guerrilla
-main: net.spikedboy.guerrilla.Guerrilla
-version: 0.2
+name: GuerrillaPlugin
+guerrillaPlugin: net.spikedboy.guerrilla.GuerrillaPlugin
 commands:
    gc:
-      description: Toggles guerrilla chat
+      description: Toggles guerrillaPlugin chat
       usage: /gc
       permission:
    g:
      description: 
      usage: type /g help [page] for more info
      permission:      
-   guerrilla:
+   guerrillaPlugin:
      description: 
-     usage: type /guerrilla help [page] for more info
+     usage: type /guerrillaPlugin help [page] for more info
      permission: 
    gmakemap:
      description:

@@ -1,543 +1,884 @@
 package net.spikedboy.guerrilla;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
-
+import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
+import net.spikedboy.guerrilla.landclaim.DelayedClaimData;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
-import org.bukkit.Server;
-import org.bukkit.command.Command;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Chest;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
-public class Guerrilla extends JavaPlugin {
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 
-    public static Map<String, Boolean> PlayerSetsBlock = new HashMap<String, Boolean>();
-    public static Map<String, Boolean> PlayerSetsSafe = new HashMap<String, Boolean>();
-    public static DelayedClaimDataQueue delayedClaimDataQueue = new DelayedClaimDataQueue();
-    public static Map<String, Boolean> TogglePlayerChat = new HashMap<String, Boolean>();
-    public static Logger log = Logger.getLogger("Minecraft");
-    public static Server sinst;
-    public static long delay, initdelay, conqdelay;
-    public static String gworldname, gwinnerName, gCh = ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY;
-    public static Guerrilla ginst;
-    public static boolean stateWon, tntProtection;
-    public static int conqmulti, defbonus, atkbonus, nchunkpay, itemid, chunkprice, itemidmaint, chunkmaintprice, objectiveChunks, maintmaxprice, minPSC, expTime, paymentThreadId;
+public class Guerrilla implements Serializable {
 
-    public void onEnable() {
-        //set a variable to send to GuerrillaG for the server instance
-        if (this.getServer() != null && this != null) {
-            sinst = this.getServer();
-            ginst = this;
-        } else {
-            log.info("Server == null");
+    private static final long serialVersionUID = 5277397633585310503L;
+
+    public static ArrayList<Guerrilla> guerrillaList = new ArrayList<>();
+
+    private static ArrayList<ArrayList<Integer>> safeChunks = new ArrayList<>();
+
+    public final ArrayList<ArrayList<Integer>> territories = new ArrayList<>();
+    public final ArrayList<String> players = new ArrayList<>();
+    public final ArrayList<ArrayList<Integer>> paymentChests = new ArrayList<>();
+
+    public String leader;
+    public Date date;
+    public Date quitPunishmentDate;
+
+    int numberOfClaimedChunks = 0;
+
+    private final ArrayList<String> invites = new ArrayList<>();
+
+    private ArrayList<ArrayList<Integer>> safeChest = new ArrayList<>(); //chest block xzy
+
+    private String name;
+    private Date antiSpam;
+
+    public Guerrilla(Player player, String args) {
+        players.add(player.getName());
+        leader = player.getName();
+        name = args;
+        Guerrilla.gmsgbroadcast(player.getName() + " created the " + name + " guerrilla!");
+        try {
+            Guerrilla.save();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
 
-        //getConfig() set up
-        this.saveDefaultConfig();
-        itemid = getConfig().getInt("guerrilla.itemid", 296);
-        chunkprice = getConfig().getInt("guerrilla.chunkprice", 16);
-        delay = (long) getConfig().getInt("guerrilla.paymenttime", 23999);
-        itemidmaint = getConfig().getInt("guerrilla.iditemmaintennance", 296);
-        chunkmaintprice = getConfig().getInt("guerrilla.chunkmaintennanceprice", 1);
-        gworldname = getConfig().getString("guerrilla.gworldname", "world");
-        log.info("[Guerrilla] Mundo: " + gworldname);
-        conqdelay = (long) getConfig().getInt("guerrilla.conquestdelay", 6000);
-        conqmulti = getConfig().getInt("guerrilla.conquestpricemultiplier", 2);
-        defbonus = getConfig().getInt("guerrilla.defenderdamagetakendivider", 2);
-        atkbonus = getConfig().getInt("guerrilla.defenderdamagedealtmultiplier", 1);
-        nchunkpay = getConfig().getInt("guerrilla.nchunksminmaintenance", 10);
-        stateWon = getConfig().getBoolean("guerrilla.ismatchwon", false);
-        objectiveChunks = getConfig().getInt("guerrilla.chunkobjective", 780);
-        maintmaxprice = getConfig().getInt("guerrilla.maxmaintenanceprice", 44);
-        gwinnerName = getConfig().getString("guerrilla.winner", "");
-        minPSC = getConfig().getInt("guerrilla.miniumplayersforasafechest", 5);
-        expTime = getConfig().getInt("guerrilla.guerrillaexpirytime", 604800000);
-        tntProtection = getConfig().getBoolean("guerrilla.explostionProtection", false);
+    public static boolean isBeingClaimed(Guerrilla guerrilla) {
+        return GuerrillaPlugin.delayedClaimDataQueue.search(guerrilla, 1) != null;
+    }
 
-        //check getConfig()
+    public void changeLeader(Player sender, String nleader) {
+        Guerrilla guerrillas = Guerrilla.getPlayerGuerrilla(sender);
+        if (guerrillas == null) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "You have no guerrilla");
+            return;
+        }
+        String gsleader = guerrillas.getLeader();
+        String sname = sender.getName();
+        Guerrilla nlg = Guerrilla.getPlayerGuerrilla(GuerrillaPlugin.serverInstance.getPlayerExact(nleader));
+        if (nlg == null) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "That player has no guerrilla!");
+            return;
+        } else if (!(nlg.equals(guerrillas))) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "That player is not in your guerrilla");
+            return;
+        }
+        if (sname.equals(gsleader)) {
+            guerrillas.leader = nleader;
+            msggue("The new leader is " + nleader + "!");
+        } else {
+            sender.sendMessage(GuerrillaPlugin.gCh + "Only the leader can do that");
+        }
+    }
 
-        if (sinst.getWorld(gworldname) == null) {
-            log.info("[Guerrilla] El nombre del mapa especificado es erroneo! Cambialo y reinicia");
+    public void addSafeChest(Chest chest, Player sender) {
+        ArrayList<Integer> chlist = Guerrilla.ChestToList(chest);
+
+        if (Guerrilla.getGuerrillaChunk(chest.getBlock().getChunk()) != Guerrilla.getPlayerGuerrilla(sender)) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "You can't make a safechest outside of your territory");
             return;
         }
 
-        //get the first payment delay
-
-        initdelay = delay - sinst.getWorld(gworldname).getTime();
-        log.info("[Guerrilla] Time for the first delay: " + initdelay);
-
-        //listeners and pluginmanager retrieving
-        PluginManager pm = sinst.getPluginManager();
-        pm.registerEvents(new GuerrillaBlockListener(this), this);
-        pm.registerEvents(new GuerrillaEntityListener(this), this);
-        pm.registerEvents(new GuerrillaPlayerListener(this), this);
-        pm.registerEvents(new GuerrillaWorldListener(this), this);
-
-        //load saved data
-        try {
-            GuerrillaG.load();
-        } catch (FileNotFoundException e) {
-            log.warning("[Guerrilla] some guerrilla file is missing, bad things might happen...");
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!Guerrilla.isLeader(sender)) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "You are not leader");
+            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            return;
         }
-        log.info("[Guerrilla] Guerrilla loaded");
-
-        //remove missing payment chests
-        try {
-            GuerrillaG.removeMChests();
-        } catch (ConcurrentModificationException e) {
-            e.printStackTrace();
+        if (safeChest == null) safeChest = new ArrayList<>();
+        int np = countPlayers();
+        if (GuerrillaConfigurations.minPSC > np) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "You can't have a safe chest if your guerrilla has less than "
+                    + GuerrillaConfigurations.minPSC + " members");
+            return;
         }
-
-        //payment thread
-        paymentThreadId = this.getServer().getScheduler().scheduleAsyncRepeatingTask(this, new Runnable() {
-            public void run() {
-                if (GuerrillaG.checkWinners() != null) {
-                    stateWon = true;
-                    gwinnerName = GuerrillaG.checkWinners().getName();
-                    getConfig().set("guerrilla.ismatchwon", true);
-                    getConfig().set("guerrilla.winner", gwinnerName);
-                    ginst.saveConfig();
-                    sinst.broadcastMessage(ChatColor.GOLD + "[GuerrillaWrittenInGold] " + gwinnerName + " HAS WON THIS MATCH!!!!!! GOOD DAY TO YOU");
-                    return;
-                }
-                GuerrillaG.ChargueMaintenance();
-                try {
-                    GuerrillaG.printmap();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, initdelay, delay);
+        if (safeChest.isEmpty()) {
+            safeChest.add(chlist);
+            sender.sendMessage(GuerrillaPlugin.gCh + "Safe chest added!");
+            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            return;
+        }
+        sender.sendMessage(GuerrillaPlugin.gCh + "You already have a safechest");
+        GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
     }
 
-    public void onDisable() {
-        sinst.getScheduler().cancelTask(paymentThreadId);
-        try {
-            GuerrillaG.save();
-        } catch (Exception e) {
-            e.printStackTrace();
+    public void removeSafeChest(Chest chest, Player sender) {
+        ArrayList<Integer> chlist = Guerrilla.ChestToList(chest);
+        if (safeChest.isEmpty()) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "You have no chests!");
+            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            return;
+        } else if (safeChest.contains(chlist)) {
+            sender.sendMessage(GuerrillaPlugin.gCh + "Safe chest removed");
+            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            safeChest.remove(chlist);
+            return;
         }
-        GuerrillaG.removeMChests();
-        log.info("[Guerrilla] Guerrilla disabled");
-        this.saveConfig();
+        sender.sendMessage(GuerrillaPlugin.gCh + "That is not your chest");
+        GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
     }
 
-    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+    private int countPlayers() {
+        return players.size();
+    }
 
-
-        if (!(sender instanceof Player)) {
-            if (cmd.getLabel().equalsIgnoreCase("gmakemap")) {
-                try {
-                    GuerrillaG.printmap();
-                    return true;
-                } catch (IOException e) {
-                    e.printStackTrace();
+    private boolean isThereAtLeastGuerrillaMemberOnline() {
+        for (String pname : players) {
+            Collection<? extends Player> onlinePlayers = GuerrillaPlugin.serverInstance.getOnlinePlayers();
+            for (Player p1 : onlinePlayers) {
+                if (p1.getName().equals(pname)) {
                     return true;
                 }
             }
-            return true;
-        }
 
-        //definitions
-        Player playurd = (Player) sender;
-        GuerrillaG guerrilla = GuerrillaG.getPlayerGuerrilla(playurd);
-        Chunk chunk = playurd.getLocation().getBlock().getChunk();
-
-        if (!playurd.getWorld().equals(sinst.getWorld(gworldname))) {
-            playurd.sendMessage(gCh + "You can't do that in this world");
-            return true;
         }
-        if (stateWon == true) {
-            playurd.sendMessage(gCh + "This round has ended, wait for an admin to start a new match! The winner was the "
-                    + gwinnerName + "'s guerrilla");
-            return true;
-        }
+        return false;
+    }
 
-        if (commandLabel.equalsIgnoreCase("gc")) {
-            if (guerrilla != null) {
-                if (args.length < 1) {
-                    if (TogglePlayerChat.get(playurd.getName()) == null || TogglePlayerChat.get(playurd.getName()) == false) {
-                        TogglePlayerChat.put(playurd.getName(), true);
-                        playurd.sendMessage(gCh + "Guerrilla chat enabled");
-                    } else if (TogglePlayerChat.get(playurd.getName()) == true) {
-                        TogglePlayerChat.put(playurd.getName(), false);
-                        playurd.sendMessage(gCh + "Guerrilla chat disabled");
-                    }
-                    return true;
-                } else {
-                    return false;
+    public int howManyGuerrillaMembersOnline() {
+        int i = 0;
+        for (String pname : players) {
+            Collection<? extends Player> onlinePlayers = GuerrillaPlugin.serverInstance.getOnlinePlayers();
+            for (Player p1 : onlinePlayers) {
+                if (p1.getName().equals(pname)) {
+                    i++;
                 }
-            } else {
-                playurd.sendMessage(gCh + "You have no guerrilla");
+            }
+
+        }
+        return i;
+    }
+
+    private String getOnlinePlayersText() {
+        int n = howManyGuerrillaMembersOnline();
+        String answ = "";
+
+        if (n != 0) {
+            answ = (ChatColor.LIGHT_PURPLE + " Online: " + ChatColor.WHITE + "(" + n + ")");
+        }
+
+        return answ;
+    }
+
+    private Chest getdchest(Chest chest) {
+        if (chest.getBlock().getRelative(BlockFace.NORTH).getType() == Material.CHEST)
+            return (Chest) chest.getBlock().getRelative(BlockFace.NORTH).getState();
+        else if (chest.getBlock().getRelative(BlockFace.SOUTH).getType() == Material.CHEST)
+            return (Chest) chest.getBlock().getRelative(BlockFace.SOUTH).getState();
+        else if (chest.getBlock().getRelative(BlockFace.EAST).getType() == Material.CHEST)
+            return (Chest) chest.getBlock().getRelative(BlockFace.EAST).getState();
+        else if (chest.getBlock().getRelative(BlockFace.WEST).getType() == Material.CHEST)
+            return (Chest) chest.getBlock().getRelative(BlockFace.WEST).getState();
+        return null;
+    }
+
+
+    public boolean removePaymentChest(Chest chest) {
+        ArrayList<Integer> al1 = ChestToList(chest);
+        if (!paymentChests.contains(al1)) {
+            return false;
+        }
+        paymentChests.remove(al1);
+        if (getdchest(chest) != null) {
+            paymentChests.remove(ChestToList(getdchest(chest)));
+        }
+        return true;
+    }
+
+    public boolean addPaymentChest(Chest chest) {
+        ArrayList<Integer> al1 = ChestToList(chest);
+        if (paymentChests.contains(al1)) {
+            return false;
+        }
+        paymentChests.add(al1);
+        if (getdchest(chest) != null) {
+            paymentChests.add(ChestToList(getdchest(chest)));
+        }
+        return true;
+    }
+
+    private void removePayment() {
+        int price = (territories.size() / GuerrillaConfigurations.nchunkpay) * GuerrillaConfigurations.chunkmaintprice;
+        boolean paid = false;
+        for (ArrayList<Integer> chestc : paymentChests) {
+            if (GuerrillaPlugin.serverInstance.getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestc.get(0),
+                    chestc.get(1), chestc.get(2)).getType() != Material.CHEST) {
+                msggue("A payment chest is missing and has been marked for removal");
+                continue;
+            }
+            Chest chest = ((Chest) (GuerrillaPlugin.serverInstance.getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestc.get(0), chestc.get(1), chestc.get(2)).getState()));
+            if ((chest != null) && (chest.getInventory().contains(GuerrillaConfigurations.itemidmaint, GuerrillaConfigurations.chunkmaintprice))) {
+                if (price > GuerrillaConfigurations.maintmaxprice) price = GuerrillaConfigurations.maintmaxprice;
+                Guerrilla.removeInventoryItems(chest.getInventory(), Material.getMaterial(GuerrillaConfigurations.itemidmaint), (price));
+                paid = true;
+                msggue("Payments issued, cost: " + price + ", thank you: Att. Tom Nook");
+                break;
+            }
+        }
+        if (!paid) {
+            if (territories.isEmpty() || price == 0) {
+                msggue("Payments issued, but you had nothing to pay");
+                return;
+            }
+            territories.remove((territories.size() - 1));
+            numberOfClaimedChunks--;
+            msggue("You have lost a chunk because you have no payment chests");
+            return;
+        }
+        return;
+    }
+
+    private boolean somebodyHome(Chunk chunk) {
+        for (String playern : players) {
+            if (GuerrillaPlugin.serverInstance.getPlayer(playern) == null) continue;
+            if (GuerrillaPlugin.serverInstance.getPlayer(playern).getLocation().getBlock().getChunk().equals(chunk)) {
                 return true;
-            }
-
-        }
-
-        if ((commandLabel.equalsIgnoreCase("g")) || (commandLabel.equalsIgnoreCase("guerrilla"))) {
-
-            if (args.length >= 1) {
-                if ((args[0].equalsIgnoreCase("changeleader"))) {
-                    if (args.length == 2) {
-                        String nleader = args[1];
-                        guerrilla.changeLeader(playurd, nleader);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else if ((args[0].equalsIgnoreCase("safec"))) {
-                    if (guerrilla == null) {
-                        playurd.sendMessage(gCh + "You have no Guerrilla");
-                        return true;
-                    }
-                    //if false deletechest, if true addchest
-                    if (!GuerrillaG.isLeader(playurd)) {
-                        playurd.sendMessage(gCh + "You are not leader");
-                        return true;
-                    }
-                    if (PlayerSetsSafe.get(playurd.getName()) == null || PlayerSetsSafe.get(playurd.getName()) == false) {
-                        playurd.sendMessage(gCh + "Setting safe chest");
-                        PlayerSetsSafe.put(playurd.getName(), Boolean.TRUE);
-                        return true;
-                    } else if (PlayerSetsSafe.get(playurd.getName()) == true) {
-                        playurd.sendMessage(gCh + "Removing safe chest");
-                        PlayerSetsSafe.put(playurd.getName(), Boolean.FALSE);
-                        return true;
-                    }
-                } else if ((args[0].equalsIgnoreCase("help"))) {
-                    if (args.length == 2) {
-                        if (args[1].equalsIgnoreCase("prices")) {
-
-                            playurd.sendMessage(gCh + chunkprice + " " + Material.getMaterial(itemid).toString()
-                                    + " for each unclaimed chunk claim, and " + chunkprice * conqmulti
-                                    + " for every conquest");
-
-                            playurd.sendMessage(gCh + "Maintenance price: " + chunkmaintprice + " "
-                                    + Material.getMaterial(itemidmaint).toString() + " every " + nchunkpay
-                                    + " chunks, with a max of: " + maintmaxprice);
-                            if (guerrilla != null) {
-                                int price = (int) (guerrilla.Territories.size() / Guerrilla.nchunkpay) * Guerrilla.chunkmaintprice;
-                                playurd.sendMessage(gCh + "You are currently paying: " + price
-                                        + " per minecraft day. \nEach real day: " + (price * 72));
-                            }
-                            return true;
-                        }
-                        int pnumber = 0;
-                        try {
-                            pnumber = Integer.parseInt(args[1]);
-                        } catch (NumberFormatException e) {
-                            return false;
-                        }
-                        switch (pnumber) {
-                            case 1: {
-                                playurd.sendMessage(ChatColor.DARK_RED + "[Page 1/4]");
-                                playurd.sendMessage(gCh + "This is the Guerrilla help :) Plugin made by DS");
-                                playurd.sendMessage(gCh + "COMMANDS: *you may also type /guerrilla instead of /g*");
-                                playurd.sendMessage(gCh + "/g disband - deletes your guerrilla (only leader)");
-                                playurd.sendMessage(gCh + "/g claim - claims the chunk you are standing on");
-                                playurd.sendMessage(gCh + "/g join <name> - joins the guerrilla you have been invited to");
-                                playurd.sendMessage(gCh + "/g invite <player> - invites the player to your guerrilla");
-                                playurd.sendMessage(gCh + "/g kick <player> - kicks a player");
-                                return true;
-
-                            }
-                            case 2: {
-                                playurd.sendMessage(ChatColor.DARK_RED + "[Page 2/4]");
-                                playurd.sendMessage(gCh + "/g unclaim - unclaims the chunk you are standing on");
-                                playurd.sendMessage(gCh + "/g unclaimall - unclaims all the chunks (leaders only)");
-                                playurd.sendMessage(gCh + "/g list [page]- lists guerrillas");
-                                playurd.sendMessage(gCh + "/g who [guerrilla] - gives guerrilla info");
-                                playurd.sendMessage(gCh + "/g pchestset - sets payment chest (then open it)");
-                                playurd.sendMessage(gCh + "/g pchestremove - removes payment chest (then open it)");
-                                return true;
-                            }
-                            case 3: {
-                                playurd.sendMessage(ChatColor.DARK_RED + "[Page 3/4]");
-                                playurd.sendMessage(gCh + "/g leave - leaves the guerrilla (not leaders)");
-                                playurd.sendMessage(gCh + "/g invitec <player> - cancel the invite for a player you've invited");
-                                playurd.sendMessage(gCh + "/g decline - cancels a invitation you've been send");
-                                playurd.sendMessage(gCh + "/gc - toggles intern guerrilla chat");
-                                playurd.sendMessage(gCh + "/g help prices - see current Guerrilla prices");
-                                playurd.sendMessage(gCh + "/g safec (leader only) - sets a safe chest only you can open or destroy (toggles set/remove)");
-                                return true;
-                            }
-                            case 4: {
-                                playurd.sendMessage(ChatColor.DARK_RED + "[Page 4/4]");
-                                playurd.sendMessage(gCh + "/g changeleader [playername] - Changes the guerrilla leader");
-                                return true;
-                            }
-                        }
-                    } else if (args.length == 1) {
-                        playurd.sendMessage(ChatColor.DARK_RED + "[Page 1/4]");
-                        playurd.sendMessage(gCh + "This is the Guerrilla help :) Plugin made by DS");
-                        playurd.sendMessage(gCh + "COMMANDS: *you may also type /guerrilla instead of /g*");
-                        playurd.sendMessage(gCh + "/g disband - deletes your guerrilla (only leader)");
-                        playurd.sendMessage(gCh + "/g claim - claims the chunk you are standing on");
-                        playurd.sendMessage(gCh + "/g join <name> - joins the guerrilla you have been invited to");
-                        playurd.sendMessage(gCh + "/g invite <player> - invites the player to your guerrilla");
-                        playurd.sendMessage(gCh + "/g kick <player> - kicks a player");
-                        return true;
-                    } else {
-                        playurd.sendMessage(gCh + "type /guerrilla help [page] for more info");
-                        return true;
-                    }
-                } else if ((args[0].equalsIgnoreCase("pchestset"))) {
-                    if (guerrilla.getLeader().equals(playurd.getName())) {
-                        Guerrilla.PlayerSetsBlock.put(playurd.getName(), new Boolean(true));
-                        sender.sendMessage(gCh + "Payment chest waiting to be set, please open it");
-                        return true;
-                    }
-                    sender.sendMessage(gCh + "You are not leader");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("adminsetatkbonus"))) {
-                    if (playurd.isOp()) {
-                        getConfig().set("guerrilla.defenderdamagedealtmultiplier", Integer.parseInt(args[1]));
-                        this.saveConfig();
-                        atkbonus = getConfig().getInt("guerrilla.defenderdamagedealtmultiplier", 1);
-                        playurd.sendMessage(String.valueOf(atkbonus));
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else if ((args[0].equalsIgnoreCase("adminsetleader"))) {
-                    if (playurd.isOp()) {
-                        GuerrillaG guerrillz = GuerrillaG.getGuerrillaByName(args[1]);
-                        guerrillz.leader = args[2];
-                        guerrillz.Players.add(playurd.getName());
-                        if (guerrilla != null) guerrilla.Players.remove(playurd.getName());
-                        sender.sendMessage(" Leader: " + guerrillz.leader);
-                        return true;
-                    }
-                } else if ((args[0].equalsIgnoreCase("setnminmaintprice"))) {
-                    if (playurd.isOp()) {
-                        getConfig().set("guerrilla.nchunksminmaintenance", Integer.parseInt(args[1]));
-                        this.saveConfig();
-                        nchunkpay = getConfig().getInt("guerrilla.nchunksminmaintenance", 4);
-                        playurd.sendMessage("" + nchunkpay);
-                        return true;
-                    }
-                    return false;
-                } else if ((args[0].equalsIgnoreCase("adminsetsafechunk"))) {
-                    if (playurd.isOp()) {
-                        GuerrillaG.setSafeChunk(chunk);
-                        playurd.sendMessage(gCh + "Set");
-                        return true;
-                    }
-                } else if ((args[0].equalsIgnoreCase("adminremovesafechunk"))) {
-                    if (playurd.isOp()) {
-                        GuerrillaG.removeSafeChunk(chunk);
-                        playurd.sendMessage(gCh + "Removed");
-                        return true;
-                    }
-                } else if ((args[0].equalsIgnoreCase("pchestremove"))) {
-                    if (guerrilla.getLeader().equals(playurd.getName())) {
-                        Guerrilla.PlayerSetsBlock.put(sender.getName(), new Boolean(false));
-                        sender.sendMessage(gCh + "Payment chest waiting to be removed, please open it");
-                        return true;
-                    }
-                    sender.sendMessage(gCh + "You are not leader");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("who"))) {
-                    if (args.length == 1) {
-                        GuerrillaG.who((Player) sender, null);
-                        return true;
-                    } else if (args.length == 2) {
-                        GuerrillaG.who((Player) sender, (String) args[1]);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else if ((args[0].equalsIgnoreCase("unclaimall"))) {
-                    if (guerrilla != null) {
-                        guerrilla.unclaimall((Player) sender);
-                        return true;
-                    }
-                    sender.sendMessage(gCh + "You have no guerrilla");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("kick"))) {
-                    if (args.length == 2) {
-                        if (guerrilla != null) {
-                            guerrilla.kick((String) args[1], playurd);
-                            return true;
-                        } else {
-                            sender.sendMessage(gCh + "Can't do that! You must have a guerrilla");
-                            return true;
-                        }
-                    }
-                    sender.sendMessage("/guerrilla kick [player]");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("leave"))) {
-                    GuerrillaG.leave((Player) sender);
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("list"))) {
-                    if (args.length == 1) {
-                        GuerrillaG.List((Player) sender, 1);
-                        return true;
-                    } else if (args.length == 2) {
-                        int page;
-                        try {
-                            page = Integer.parseInt(args[1]);
-                        } catch (NumberFormatException e) {
-                            return false;
-                        }
-                        GuerrillaG.List(playurd, page);
-                        return true;
-                    }
-                    return false;
-                } else if ((args[0].equalsIgnoreCase("invite"))) {
-                    if (!GuerrillaG.getPlayerGuerrilla(playurd).getLeader().equals(playurd.getName())) {
-                        playurd.sendMessage(gCh + "You are not leader");
-                        return true;
-                    }
-                    if (args.length == 2) {
-                        Player player = getServer().getPlayer((String) args[1]);
-                        if (player != null) {
-                            guerrilla.invite(player, sender);
-                            return true;
-                        }
-                        sender.sendMessage(gCh + "Player not found");
-                        return true;
-                    }
-                    sender.sendMessage("/guerrilla invite [playername]");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("invitec"))) {
-                    if (args.length == 2) {
-                        Player player = getServer().getPlayer((String) args[1]);
-                        if (player != null) {
-                            if (guerrilla != null) {
-                                guerrilla.inviteCancel(player, (Player) sender);
-                                return true;
-                            }
-                            sender.sendMessage(gCh + "You can't do that");
-                            return true;
-                        }
-                        sender.sendMessage(gCh + "Player not found");
-                        return true;
-                    }
-                } else if ((args[0].equalsIgnoreCase("decline"))) {
-                    if (args.length == 2) {
-                        GuerrillaG.inviteDecline((Player) sender, (String) args[1]);
-                        return true;
-                    }
-                    sender.sendMessage(gCh + "/g decline [name]");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("join"))) {
-                    if (args.length == 2) {
-                        GuerrillaG guerrillan = GuerrillaG.getGuerrillaByName((String) args[1]);
-                        if (guerrillan != null) {
-                            guerrillan.join((Player) sender);
-                            return true;
-                        }
-                        sender.sendMessage(gCh + "That guerrilla doesn't exist");
-                        return true;
-
-                    }
-                    sender.sendMessage(gCh + "/guerrilla join name");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("claim"))) {
-                    Player player = (Player) sender;
-                    if (guerrilla != null) {
-                        guerrilla.Claim(chunk, player);
-                        return true;
-                    }
-                    player.sendMessage(gCh + "You have no guerrilla");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("unclaim"))) {
-                    Player player = (Player) sender;
-                    if (guerrilla != null) {
-                        guerrilla.unclaim(chunk, player);
-                        return true;
-                    }
-                    player.sendMessage(gCh + "You can't do that");
-                    return true;
-                } else if ((args[0].equalsIgnoreCase("create"))) {
-                    if (args.length == 2) {
-                        if (GuerrillaG.getPlayerGuerrilla((Player) sender) == null) {
-                            if (GuerrillaG.getGuerrillaByName((String) args[1]) != null) {
-                                sender.sendMessage(gCh + "That guerrilla already exists! Please choose another name");
-                                return true;
-                            }
-                            if (args[1].length() > 10) {
-                                playurd.sendMessage(gCh + "The name is too long, max. 10 characters");
-                                return true;
-                            }
-                            GuerrillaG guerrillan = new GuerrillaG((Player) sender, (String) args[1]);
-                            GuerrillaG.GuerrillaList.add(guerrillan);
-                            //sender.sendMessage(gCh + "You created the "+ guerrilla.getName() +" guerrilla");
-                            return true;
-                        }
-                        sender.sendMessage(gCh + "You have already joined a guerrilla");
-                        return true;
-
-                    }
-                    sender.sendMessage(gCh + "/guerrilla create [guerrilla name]");
-                    return true;
-                } else if (args[0].equalsIgnoreCase("disband")) {
-                    if (args.length == 2) {
-                        Player player = (Player) sender;
-                        if ((GuerrillaG.getGuerrillaByName((String) args[1])) == (guerrilla)) {
-                            guerrilla.disband(player);
-                            return true;
-                        }
-                        sender.sendMessage(gCh + "You can't disband other guerrilla than your own!");
-                        return true;
-                    }
-                    sender.sendMessage(gCh + "Are you sure? type /guerrilla disband [yourguerrillaname] to disband");
-                    return true;
-                }
-
             }
         }
         return false;
     }
 
-    public static void delayedClaim(final GuerrillaG gclaimer, final GuerrillaG gowner, final Chunk chunk, final Player claimer) {
+    public boolean claim(Chunk chunk, Player claimer) {
+        if (Guerrilla.isSafeChunk(chunk)) {
+            claimer.sendMessage(GuerrillaPlugin.gCh + "Can't claim a safe chunk");
+            return false;
+        }
+        if (Guerrilla.getPlayerGuerrilla(claimer) != null) {
+            ArrayList<Integer> clist = new ArrayList<>(2);
+            int chunkX = chunk.getX();
+            int chunkZ = chunk.getZ();
+            clist.add(chunkX);
+            clist.add(chunkZ);
+            if ((territories.contains(clist))) {
+                claimer.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That chunk is already claimed");
+                return false;
+            } else if (!(claimer.getInventory().contains(GuerrillaConfigurations.itemid, GuerrillaConfigurations.chunkprice))) {
+                claimer.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "The required price is "
+                        + GuerrillaConfigurations.chunkprice + " of " + (Material.getMaterial(GuerrillaConfigurations.itemid).name())
+                        + " and you don't have it");
+                return false;
+            } else {
+                if (canClaim(chunk, claimer)) {
+                    if (Guerrilla.getGuerrillaChunk(chunk) != this && Guerrilla.getGuerrillaChunk(chunk) != null) {
+                        if (!claimer.getInventory().contains(GuerrillaConfigurations.itemid, GuerrillaConfigurations.chunkprice * GuerrillaConfigurations.conqmulti)) {
+                            claimer.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "The required price is "
+                                    + (GuerrillaConfigurations.chunkprice * GuerrillaConfigurations.conqmulti) + " of "
+                                    + (Material.getMaterial(GuerrillaConfigurations.itemid).name()) + " and you don't have it");
 
-        ArrayList<Double> clistn = new ArrayList<Double>(2);
-        Double chunkX = new Double(chunk.getX());
-        Double chunkZ = new Double(chunk.getZ());
-        clistn.add(chunkX);
-        clistn.add(chunkZ);
-        final ArrayList<Double> clist = clistn;
+                            return false;
+                        }
 
-        final Integer dclaimid = sinst.getScheduler().scheduleAsyncDelayedTask(ginst, new Runnable() {
-            public void run() {
-                DelayedClaimData dcd = delayedClaimDataQueue.search(claimer.getName());
-
-                if (claimer.getInventory().contains(Guerrilla.itemid, (Guerrilla.chunkprice * Guerrilla.conqmulti))) {
-                    GuerrillaG.removeInventoryItems(claimer.getInventory(), Material.getMaterial(Guerrilla.itemid),
-                            (Guerrilla.chunkprice * Guerrilla.conqmulti));
+                        if (GuerrillaPlugin.delayedClaimDataQueue.search(claimer.getName()) != null) {
+                            claimer.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY
+                                    + "Your faction is already claiming an enemy chunk! You can't do that twice");
+                            return true;
+                        }
+                        GuerrillaPlugin.delayedClaim(this, Guerrilla.getGuerrillaChunk(chunk), chunk, claimer);
+                        Guerrilla.getGuerrillaChunk(chunk).msggue(this.getName() + " is claiming part of your territory! Coords: "
+                                + chunk.getBlock(0, 0, 0).getX() + "," + chunk.getBlock(0, 0, 0).getZ() + " (x,z)");
+                        msggue("Claiming enemy area, if you leave the chunk you will loose this dispute!");
+                        return true;
+                    }
+                    Guerrilla.removeInventoryItems(claimer.getInventory(), Material.getMaterial(GuerrillaConfigurations.itemid), GuerrillaConfigurations.chunkprice);
+                    numberOfClaimedChunks++;
+                    territories.add(clist);
+                    gmsgbroadcast(this.getName() + " claimed some terrain");
+                    //claimer.sendMessage("Chunk claimed");
+                    return true;
                 } else {
-                    claimer.sendMessage(gCh + "You pig! You dropped the payment? you don't get the chunk!");
-                    delayedClaimDataQueue.removeNode(dcd);
-                    return;
+                    claimer.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You can't claim this chunk");
+                    return false;
                 }
-                if (stateWon == true) {
-                    delayedClaimDataQueue.removeNode(dcd);
-                    return;
-                }
-                gowner.claimedchunks--;
-                gowner.Territories.remove(clist);
-                gclaimer.claimedchunks++;
-                gclaimer.Territories.add(clist);
-                delayedClaimDataQueue.removeNode(dcd);
-                GuerrillaG.gmsgbroadcast(gclaimer.getName() + " took a part of territory from " + gowner.getName() + "!");
-
             }
-        }, conqdelay);
+        }
+        return false;
+    }
 
-        delayedClaimDataQueue.addNode(new DelayedClaimData(clist, gclaimer, gowner, claimer.getName(), dclaimid.intValue()));
+    private boolean canClaim(Chunk chunk, Player claimer) {
+        Guerrilla owner = Guerrilla.getGuerrillaChunk(chunk);
+        Guerrilla gclaimer = Guerrilla.getPlayerGuerrilla(claimer);
+        Date now = new Date();
+        if ((owner != this) && (owner != null)) {
+            if (owner.date == null) owner.date = now;
+            if (((now.getTime() - owner.date.getTime()) >= GuerrillaConfigurations.expTime) && ((adyChunks(chunk, owner) <= 2)
+                    && (adyChunks(chunk, gclaimer) >= 1))) {
+                return true;
+            }
+            if ((owner.quitPunishmentDate != null) && ((now.getTime() - owner.quitPunishmentDate.getTime()) < GuerrillaConfigurations.delay)
+                    && ((adyChunks(chunk, owner) <= 2) && (adyChunks(chunk, gclaimer) >= 1))) {
+                return true;
+            }
+            if (!owner.isThereAtLeastGuerrillaMemberOnline()) return false;
+            if (owner.somebodyHome(chunk)) return false;
+            if ((adyChunks(chunk, owner) <= 2) && (adyChunks(chunk, gclaimer) >= 1)) {
+                return true;
+            }
+        } else if (owner == null) {
+            if (adyChunks(chunk, this) >= 1) {
+                return true;
+            } else if (adyChunks(chunk, this) == 0) {
+                return this.numberOfClaimedChunks == 0;
+            }
+        } else if (owner == this) {
+            return false;
+        }
+        return false;
+    }
+
+    public boolean unclaim(Chunk chunk, Player claimer) {
+        ArrayList<Integer> clist = new ArrayList<>(2);
+        int chunkX = chunk.getX();
+        int chunkZ = chunk.getZ();
+        clist.add(chunkX);
+        clist.add(chunkZ);
+        if (territories.contains(clist)) {
+            numberOfClaimedChunks--;
+            territories.remove(clist);
+            claimer.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "Chunk unclaimed");
+            return true;
+        }
+        claimer.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You don't own this chunk");
+        return false;
+    }
+
+    public boolean unclaimall(Player sender) {
+        if (sender.getName().equals(leader)) {
+            numberOfClaimedChunks = 0;
+            territories.clear();
+            msggue("All territories have been unclaimed!");
+            return true;
+        }
+        sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You are not leader");
+        return true;
+    }
+
+    public void msggue(String msg) {
+        for (String playername : players) {
+
+            if (GuerrillaPlugin.serverInstance.getPlayer(playername) != null) {
+                GuerrillaPlugin.serverInstance.getPlayer(playername).sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + msg);
+            }
+        }
+    }
+
+    public void msgguespam(String msg) {
+        Date now = new Date();
+        if ((this.antiSpam != null) && ((now.getTime() - this.antiSpam.getTime()) < 5000)) {
+            return;
+        }
+        this.antiSpam = new Date();
+        for (String playername : players) {
+            Player player = GuerrillaPlugin.serverInstance.getPlayer(playername);
+            //GuerrillaPlugin.log.info("deb " + antiSpam.getTime());
+            if (player != null) {
+                player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + msg);
+            }
+        }
+    }
+
+    public boolean join(Player player) {
+        if (invites.contains(player.getName())) {
+            msggue(player.getName() + " has joined your GuerrillaPlugin");
+            players.add(player.getName());
+            invites.remove(player.getName());
+            player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You are now part of the "
+                    + this.getName() + " guerrilla");
+            return true;
+        } else {
+            player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You have not been invited to this faction");
+            return false;
+        }
+    }
+
+    public boolean kick(String player, Player sender) {
+        if (Guerrilla.isLeader(sender)) {
+            if (Guerrilla.getPlayerGuerrilla(player) == Guerrilla.getPlayerGuerrilla(sender)) {
+                players.remove(player);
+                msggue(player + " has been kicked");
+                if (GuerrillaPlugin.serverInstance.getPlayer(player) != null) {
+                    GuerrillaPlugin.serverInstance.getPlayer(player).sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY
+                            + sender.getName() + " has kicked you");
+                }
+                return true;
+            }
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That player is not in your guerrilla");
+            return false;
+        }
+        sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You are not a guerrilla leader");
+        return false;
+    }
+
+    public boolean invite(Player player, CommandSender sender) {
+        if (!(invites.contains(player.getName())) && ((Guerrilla.getPlayerGuerrilla(player)) == null)) {
+            invites.add(player.getName());
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + player.getName() + " has been invited to your guerrilla");
+            player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You have been invited to the " + this.getName() + " guerrilla");
+            return true;
+        }
+        sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That player can't get invited");
+        return false;
+    }
+
+    public boolean inviteCancel(Player player, Player sender) {
+        if ((invites.contains(player.getName())) && (Guerrilla.isLeader(sender))) {
+            invites.remove(player.getName());
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You canceled that invite");
+            return true;
+        }
+        sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You can't do that");
+        return false;
+    }
+
+    public boolean ownsGuerrillaChunk(Chunk chunk) {
+        ArrayList<Integer> clist = new ArrayList<>(2);
+        Integer chunkX = chunk.getX();
+        Integer chunkZ = chunk.getZ();
+        clist.add(chunkX);
+        clist.add(chunkZ);
+        if (Guerrilla.getGuerrillaChunk(chunk) == null) {
+            return true;
+        } else {
+            return (territories.contains(clist));
+        }
+    }
+
+    public boolean disband(Player player) {
+        if (this.getLeader().equals(player.getName())) {
+            msggue("Your guerrilla has been disbanded!");
+            GuerrillaPlugin.log.info(this.getName() + " disbanded");
+            players.clear();
+            territories.clear();
+            invites.clear();
+            name = "";
+            leader = "";
+            numberOfClaimedChunks = 0;
+            guerrillaList.remove(this);
+            return true;
+        }
+        player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You do not own this guerrilla");
+        return false;
+    }
+
+    public String getLeader() {
+        return leader;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public static Guerrilla getGuerrillaSafeChest(Chest chest) {
+        for (Guerrilla g1 : guerrillaList) {
+            if (g1.safeChest == null) continue;
+            if (g1.safeChest.isEmpty()) continue;
+            ArrayList<Integer> chlist = Guerrilla.ChestToList(chest);
+            if (g1.safeChest.get(0).equals(chlist)) {
+                return Guerrilla.getGuerrillaChunk(chest.getBlock().getChunk());
+            }
+        }
+        return null;
+    }
+
+    private static void sortGList() {
+        //TODO
+        if (guerrillaList.isEmpty()) return;
+        for (int i = 0; i < (guerrillaList.size()); i++) {
+
+            int n = guerrillaList.get(i).howManyGuerrillaMembersOnline(), maxIn = i;
+
+            for (int j = i; j < (guerrillaList.size()); j++) {
+                if (n <= guerrillaList.get(j).howManyGuerrillaMembersOnline()) maxIn = j;
+            }
+
+            Guerrilla gAu = guerrillaList.get(i);
+            guerrillaList.set(i, guerrillaList.get(maxIn));
+            guerrillaList.set(maxIn, gAu);
+
+        }
+    }
+
+    public static void List(Player sender, int page) {
+        sortGList();
+        if (page <= 0) page = 1;
+        int index = (page - 1) * 7;
+        sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.WHITE + "Listing Guerrillas:" + ChatColor.GRAY
+                + " (Chunk objective: " + GuerrillaConfigurations.objectiveChunks + ") " + ChatColor.WHITE + "PAGE " + page);
+        for (int i = index; i < (guerrillaList.size()); i++) {
+            if (i > (guerrillaList.size() - 1)) break;
+            Guerrilla guerrilla = guerrillaList.get(i);
+            sender.sendMessage("- " + guerrilla.name + ChatColor.LIGHT_PURPLE + " Leader: " + ChatColor.WHITE
+                    + guerrilla.getLeader() + ChatColor.LIGHT_PURPLE + " Chunks: " + ChatColor.WHITE + guerrilla.numberOfClaimedChunks
+                    + guerrilla.getOnlinePlayersText());
+        }
+    }
+
+    public static Guerrilla getGuerrillaByName(String name) {
+        for (Guerrilla guerrilla : guerrillaList) {
+            if (guerrilla.getName().equals(name)) {
+                return guerrilla;
+            }
+        }
+        return null;
+    }
+
+    public static Guerrilla checkWinners() {
+        for (Guerrilla guerrilla : guerrillaList) {
+            if (guerrilla.numberOfClaimedChunks >= GuerrillaConfigurations.objectiveChunks) {
+                return guerrilla;
+            }
+        }
+        return null;
+    }
+
+    public static void printmap() throws IOException {
+        FileWriter fstream = new FileWriter("coords.txt");
+        BufferedWriter out = new BufferedWriter(fstream);
+        int contador = 0;
+        for (Guerrilla guerrilla : guerrillaList) {
+            for (ArrayList<Integer> clist : guerrilla.territories) {
+                Integer ClistX = clist.get(0);
+                Integer ClistZ = clist.get(1);
+                String gname = guerrilla.getName();
+                if (contador != 0) out.newLine();
+                out.write(ClistX + "," + ClistZ + "," + gname + ",");
+                out.flush();
+                contador++;
+            }
+        }
+    }
+
+    public static void who(Player sender, String args) {
+        Date now = new Date();
+        if (args == null) {
+            Guerrilla guerrilla = Guerrilla.getPlayerGuerrilla(sender);
+            if (guerrilla == null) {
+                sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You have no guerrilla");
+                return;
+            }
+            if (guerrilla.date == null) guerrilla.date = now;
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + guerrilla.getName() + "'s info:");
+            sender.sendMessage(ChatColor.DARK_AQUA + " Chunks claimed: " + ChatColor.WHITE + guerrilla.numberOfClaimedChunks);
+            sender.sendMessage(ChatColor.DARK_AQUA + " Payment chests: " + ChatColor.WHITE + guerrilla.paymentChests.size());
+            sender.sendMessage(ChatColor.DARK_AQUA + " Last login: " + ChatColor.WHITE
+                    + ((now.getTime() - guerrilla.date.getTime()) / 3600000) + ChatColor.DARK_AQUA + "h ago");
+
+            sender.sendMessage(ChatColor.DARK_AQUA + " Members:");
+
+            for (String playername : guerrilla.players) {
+                if (guerrilla.getLeader() == playername) {
+                    sender.sendMessage("  " + playername + (ChatColor.LIGHT_PURPLE + " (leader)"));
+                } else {
+                    sender.sendMessage("  " + playername);
+                }
+            }
+        } else {
+            Guerrilla guerrilla = Guerrilla.getGuerrillaByName(args);
+            if (guerrilla == null) {
+                sender.sendMessage(args + " doesn't exist");
+                return;
+            } else {
+                if (guerrilla.date == null) guerrilla.date = now;
+                sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + guerrilla.getName() + "'s info:");
+                sender.sendMessage(ChatColor.DARK_AQUA + " Chunks claimed: " + ChatColor.WHITE + guerrilla.numberOfClaimedChunks);
+                sender.sendMessage(ChatColor.DARK_AQUA + " Payment chests: " + ChatColor.WHITE + guerrilla.paymentChests.size());
+                sender.sendMessage(ChatColor.DARK_AQUA + " Last login: " + ChatColor.WHITE
+                        + ((now.getTime() - guerrilla.date.getTime()) / 3600000) + ChatColor.DARK_AQUA + "h ago");
+                if (guerrilla.quitPunishmentDate != null) {
+                    sender.sendMessage(ChatColor.DARK_AQUA + " Punished: " + ChatColor.WHITE
+                            + (((now.getTime() - guerrilla.quitPunishmentDate.getTime()) < GuerrillaConfigurations.delay)));
+                }
+                sender.sendMessage(ChatColor.DARK_AQUA + " Members:");
+                for (String playername : guerrilla.players) {
+                    if (guerrilla.getLeader().equals(playername)) {
+                        sender.sendMessage("  " + playername + (ChatColor.LIGHT_PURPLE + " (leader)"));
+                    } else {
+                        sender.sendMessage("  " + playername);
+                    }
+                }
+            }
+        }
+    }
+
+    public static Guerrilla getGuerrillaChunk(Chunk chunk) {
+        ArrayList<Integer> clist = new ArrayList<>(2);
+        Integer chunkX = chunk.getX();
+        Integer chunkZ = chunk.getZ();
+        clist.add(chunkX);
+        clist.add(chunkZ);
+        for (Guerrilla guerrilla : guerrillaList) {
+            if (guerrilla.territories.contains(clist)) {
+                return guerrilla;
+            }
+        }
+        return null;
+    }
+
+    public static Guerrilla getPlayerGuerrilla(Player player) {
+        for (Guerrilla guerrilla : guerrillaList) {
+            if (guerrilla.players.contains(player.getName())) {
+                return guerrilla;
+            }
+        }
+        return null;
+    }
+
+    private static Guerrilla getPlayerGuerrilla(String player) {
+        for (Guerrilla guerrilla : guerrillaList) {
+            if (guerrilla.players.contains(player)) {
+                return guerrilla;
+            }
+        }
+        return null;
+    }
+
+    public static boolean isLeader(Player player) {
+        Guerrilla guerrilla = Guerrilla.getPlayerGuerrilla(player);
+        //GuerrillaPlugin.log.info(player.getName() + " " + guerrilla.leader + " " + guerrilla.getLeader() + " " + guerrilla.leader.equals(player.getName()));
+        return guerrilla.leader.equals(player.getName());
+    }
+
+    public static boolean leave(Player sender) {
+        if (Guerrilla.isLeader(sender)) {
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "The leader can't leave! Disband!");
+            return true;
+        }
+        Guerrilla guerrilla = Guerrilla.getPlayerGuerrilla(sender);
+        if ((guerrilla != null) && ((!Guerrilla.isLeader(sender)))) {
+            guerrilla.players.remove(sender.getName());
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You left the "
+                    + guerrilla.getName() + " guerrilla!");
+            return true;
+        }
+        sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You can't do that!");
+        return false;
+    }
+
+    public static boolean inviteDecline(Player sender, String args) {
+        Guerrilla guerrilla = Guerrilla.getGuerrillaByName(args);
+        if (guerrilla == null) {
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That guerrilla doesn't exist");
+            return false;
+        }
+        if (guerrilla.invites.contains(sender.getName())) {
+            guerrilla.msggue(sender.getName() + "Declined his invite");
+            guerrilla.invites.remove(sender.getName());
+            sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "Invitation declined");
+            return true;
+        }
+        sender.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You have no pending invites");
+        return false;
+    }
+
+    private static void saveFunc(Object o, String path) throws Exception {
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path));
+        oos.writeObject(o);
+        oos.flush();
+        oos.close();
+    }
+
+    private static Object loadFunc(String path) throws Exception {
+        ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path));
+        Object result = ois.readObject();
+        ois.close();
+        return result;
+    }
+
+    public static void save() throws Exception {
+        Guerrilla.saveFunc(guerrillaList, "GuerrillaPlugin.bin");
+        Guerrilla.saveFunc(safeChunks, "GuerrillaSafe.bin");
+    }
+
+    public static void removeInventoryItems(Inventory inv, Material type, int amount) {
+        GuerrillaPlugin.log.info("cantidad total: " + amount);
+        for (ItemStack is : inv.getContents()) {
+            if ((is != null) && (is.getType() == type)) {
+                int newamount = is.getAmount() - amount;
+                GuerrillaPlugin.log.info("stack - total: " + newamount);
+                if (newamount > 0) {
+                    is.setAmount(newamount);
+                    break;
+                } else {
+                    inv.remove(is);
+                    amount = -newamount;
+                    if (amount == 0) break;
+                }
+            }
+        }
+    }
+
+    public static void load() throws Exception {
+        File gFile = new File("GuerrillaPlugin.bin");
+        File sChunks = new File("GuerrillaSafe.bin");
+        if (gFile.exists()) guerrillaList = (ArrayList<Guerrilla>) Guerrilla.loadFunc("GuerrillaPlugin.bin");
+        else gFile.createNewFile();
+        if (sChunks.exists()) safeChunks = (ArrayList<ArrayList<Integer>>) Guerrilla.loadFunc("GuerrillaSafe.bin");
+        else sChunks.createNewFile();
+    }
+
+    private static int adyChunks(Chunk chunk, Guerrilla guerrilla) {
+        int n = 0;
+        if (Guerrilla.getGuerrillaChunk(chunk.getBlock(1, 1, 1).getRelative(BlockFace.NORTH, 17).getChunk()) == guerrilla) {
+            n++;
+        }
+        if (Guerrilla.getGuerrillaChunk(chunk.getBlock(1, 1, 1).getRelative(BlockFace.SOUTH, 17).getChunk()) == guerrilla) {
+            n++;
+        }
+        if (Guerrilla.getGuerrillaChunk(chunk.getBlock(1, 1, 1).getRelative(BlockFace.EAST, 17).getChunk()) == guerrilla) {
+            n++;
+        }
+        if (Guerrilla.getGuerrillaChunk(chunk.getBlock(1, 1, 1).getRelative(BlockFace.WEST, 17).getChunk()) == guerrilla) {
+            n++;
+        }
+        return n;
+    }
+
+    public static void chargeMaintenance() {
+        gmsgbroadcast("Issuing payments...");
+        for (Guerrilla guerrilla : guerrillaList) {
+            guerrilla.removePayment();
+        }
+        GuerrillaPlugin.log.info("[GuerrillaPlugin] Done");
+        try {
+            Guerrilla.save();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void gmsgbroadcast(String msg) {
+        GuerrillaPlugin.log.info("[GuerrillaPlugin] " + msg);
+        for (Player player : GuerrillaPlugin.serverInstance.getOnlinePlayers()) {
+            player.sendMessage(ChatColor.DARK_PURPLE + "[GuerrillaPlugin] " + ChatColor.GRAY + msg);
+        }
+    }
+
+    private static ArrayList<Integer> ChestToList(Chest chest) {
+        ArrayList<Integer> chlist = new ArrayList<>(3);
+        Integer ChX = chest.getX();
+        Integer ChY = chest.getY();
+        Integer ChZ = chest.getZ();
+        chlist.add(ChX);
+        chlist.add(ChY);
+        chlist.add(ChZ);
+        return chlist;
+    }
+
+    public static Chest ListToChest(ArrayList<Integer> chlist) {
+        int chestx = chlist.get(0);
+        int chesty = chlist.get(1);
+        int chestz = chlist.get(2);
+        Chest chest = (Chest) GuerrillaPlugin.serverInstance.getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestx, chesty, chestz).getState();
+        if (chest == null) {
+            GuerrillaPlugin.log.info("[GuerrillaPlugin] Oh shit nigga what are you doing");
+            return null;
+        }
+        return chest;
+    }
+
+    public static void map(Block block, Player sender) {
+        //WIP
+
+        boolean finished = false;
+        Chunk center = block.getChunk();
+        String line = "";
+        char[] lineCh = new char[4];
+
+        World world = center.getWorld();
+
+        Chunk ulcorner = world.getChunkAt(center.getX() + 1, center.getZ() + 1);
+
+        Chunk uside = world.getChunkAt(center.getX(), center.getZ() + 1);
+        Chunk urcorner = world.getChunkAt(center.getX() - 1, center.getZ() + 1);
+
+        Chunk lside = world.getChunkAt(center.getX() + 1, center.getZ());
+        Chunk rside = world.getChunkAt(center.getX() - 1, center.getZ());
+
+        Chunk dlcorner = world.getChunkAt(center.getX() + 1, center.getZ() - 1);
+        Chunk dside = world.getChunkAt(center.getX(), center.getZ() - 1);
+        Chunk drcorner = world.getChunkAt(center.getX() - 1, center.getZ() - 1);
+
+        Block first = ulcorner.getBlock(0, 0, 0);
+
+
+        for (byte j = 0; j < 12; j++) {
+            for (byte i = 0; i < 4; i++) {
+                if (i == 1) {
+                    lineCh[i] = '+';
+                }
+                if (i > 1 && i < 3) {
+                    lineCh[i] = 'G';
+                    continue;
+                }
+                if (i == 3) {
+                    lineCh[i] = '+';
+                    continue;
+                }
+            }
+
+            line += lineCh;
+        }
+
+
+    }
+
+    public static void setSafeChunk(Chunk chunk) {
+        Guerrilla owner = getGuerrillaChunk(chunk);
+
+        ArrayList<Integer> clist = new ArrayList<>(2);
+        Integer chunkX = chunk.getX();
+        Integer chunkZ = chunk.getZ();
+        clist.add(chunkX);
+        clist.add(chunkZ);
+        if (owner != null) {
+            owner.territories.remove(clist);
+        }
+        if (safeChunks.contains(clist)) {
+            return;
+        }
+        safeChunks.add(clist);
+    }
+
+    public static boolean isSafeChunk(Chunk chunk) {
+        ArrayList<Integer> clist = new ArrayList<>(2);
+        Integer chunkX = chunk.getX();
+        Integer chunkZ = chunk.getZ();
+        clist.add(chunkX);
+        clist.add(chunkZ);
+        return safeChunks.contains(clist);
+    }
+
+    public static void removeSafeChunk(Chunk chunk) {
+        ArrayList<Integer> clist = new ArrayList<>(2);
+        Integer chunkX = chunk.getX();
+        Integer chunkZ = chunk.getZ();
+        clist.add(chunkX);
+        clist.add(chunkZ);
+
+        if (!safeChunks.contains(clist)) {
+            return;
+        }
+        safeChunks.remove(clist);
+    }
+
+    public static int getClaimingID(String pname) {
+        DelayedClaimData dcd = GuerrillaPlugin.delayedClaimDataQueue.search(pname);
+        if (dcd != null) {
+            return (dcd.getThreadID());
+        } else {
+            return -1;
+        }
     }
 
 }
