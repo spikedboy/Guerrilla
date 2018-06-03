@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.spikedboy.guerrilla</groupId>
-    <artifactId>guerrilla</artifactId>
+    <groupId>com.spikedboy.guerrillaPlugin</groupId>
+    <artifactId>guerrillaPlugin</artifactId>
     <version>0.2-SNAPSHOT</version>
 
     <repositories>
@@ -22,6 +22,12 @@
             <version>1.12.2-R0.1-SNAPSHOT</version>
             <type>jar</type>
             <scope>provided</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.inject/guice -->
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>4.2.0</version>
         </dependency>
     </dependencies>
 

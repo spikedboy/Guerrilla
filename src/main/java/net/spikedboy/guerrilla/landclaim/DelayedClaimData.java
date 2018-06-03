@@ -1,12 +1,14 @@
-package net.spikedboy.guerrilla;
+package net.spikedboy.guerrilla.landclaim;
+
+import net.spikedboy.guerrilla.Guerrilla;
 
 import java.util.ArrayList;
 
 public class DelayedClaimData {
 
     private ArrayList<Double> chunk;
-    private GuerrillaG guerrillaClaimer;
-    private GuerrillaG guerrillaOwner;
+    private Guerrilla guerrillaClaimer;
+    private Guerrilla guerrillaOwner;
     private String claimerName;
     private int threadID;
     private DelayedClaimData subsequentNode;
@@ -19,8 +21,8 @@ public class DelayedClaimData {
         this.subsequentNode = subsequentNode;
     }
 
-    DelayedClaimData(ArrayList<Double> iChunk, GuerrillaG iGuerrillaClaimer,
-                     GuerrillaG iGuerrillaOwner, String iClaimerName, int iThreadID) {
+    public DelayedClaimData(ArrayList<Integer> iChunk, Guerrilla iGuerrillaClaimer,
+                            Guerrilla iGuerrillaOwner, String iClaimerName, int iThreadID) {
         chunk = iChunk;
         guerrillaClaimer = iGuerrillaClaimer;
         guerrillaOwner = iGuerrillaOwner;
@@ -33,11 +35,11 @@ public class DelayedClaimData {
         return chunk;
     }
 
-    public GuerrillaG getGuerrillaClaimer() {
+    public Guerrilla getGuerrillaClaimer() {
         return guerrillaClaimer;
     }
 
-    public GuerrillaG getGuerrillaOwner() {
+    public Guerrilla getGuerrillaOwner() {
         return guerrillaOwner;
     }
 
@@ -53,11 +55,11 @@ public class DelayedClaimData {
         this.chunk = chunk;
     }
 
-    public void setGuerrillaClaimer(GuerrillaG guerrillaClaimer) {
+    public void setGuerrillaClaimer(Guerrilla guerrillaClaimer) {
         this.guerrillaClaimer = guerrillaClaimer;
     }
 
-    public void setGuerrillaOwner(GuerrillaG guerrillaOwner) {
+    public void setGuerrillaOwner(Guerrilla guerrillaOwner) {
         this.guerrillaOwner = guerrillaOwner;
     }
 
@@ -70,13 +72,11 @@ public class DelayedClaimData {
     }
 
     public boolean equals(DelayedClaimData dcd) {
-        if ((dcd == null) || (dcd.getChunk().equals(chunk) &&
+        return (dcd == null) || (dcd.getChunk().equals(chunk) &&
                 dcd.getClaimerName().equals(claimerName) &&
                 dcd.getGuerrillaOwner().equals(guerrillaOwner) &&
                 dcd.getGuerrillaClaimer().equals(guerrillaClaimer) &&
-                (dcd.getThreadID() == threadID)))
-            return true;
-        else return false;
+                (dcd.getThreadID() == threadID));
     }
 
 }

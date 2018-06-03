@@ -1,4 +1,6 @@
-package net.spikedboy.guerrilla;
+package net.spikedboy.guerrilla.landclaim;
+
+import net.spikedboy.guerrilla.Guerrilla;
 
 import java.util.ArrayList;
 
@@ -6,7 +8,7 @@ public class DelayedClaimDataQueue {
 
     private DelayedClaimData firstNode;
 
-    DelayedClaimDataQueue() {
+    public DelayedClaimDataQueue() {
         firstNode = null;
     }
 
@@ -14,7 +16,7 @@ public class DelayedClaimDataQueue {
      * @return Will return a null value if there is no last node
      */
 
-    public DelayedClaimData getLastNode() {
+    private DelayedClaimData getLastNode() {
         DelayedClaimData searchPointer = firstNode;
         if (searchPointer != null) {
             while (firstNode.getSubsequentNode() != null) {
@@ -76,7 +78,7 @@ public class DelayedClaimDataQueue {
      * @return
      */
 
-    public DelayedClaimData search(GuerrillaG guerrilla, int kind) {
+    public DelayedClaimData search(Guerrilla guerrilla, int kind) {
         DelayedClaimData pointer = firstNode;
         boolean found = false;
         while ((pointer != null) && (!found)) {
@@ -124,8 +126,7 @@ public class DelayedClaimDataQueue {
     }
 
     public boolean isEmpty() {
-        if (firstNode == null) return true;
-        else return false;
+        return firstNode == null;
     }
 
 }

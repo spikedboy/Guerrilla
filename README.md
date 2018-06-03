@@ -21,7 +21,7 @@ No one but the Guerrilla members may break or destroy blocks inside their claime
 always be built in top of. This is on purpose so no chunk can be made inaccesible to conquer.
 
 When two Guerrilla's territories met, they may conquer each other. You will only be able to attack other Guerrilla's
-territories when: There is someone from that guerrilla online. The chunk you're going to conquer has two or less
+territories when: There is someone from that guerrillaPlugin online. The chunk you're going to conquer has two or less
 adjacent (nswe) territories from the Guerrilla that owns the chunk. This is so you won't be able to claim in a straight
 line into their base. Then, in a configurable period of time, you may not leave the chunk you're conquering and the
 defenders will be warned they are being attacked. If you are killed, leave the chunk or unlog, you will be unsuccesful
@@ -34,19 +34,19 @@ Straight from the ingame help:
 
 This is the Guerrilla help :) Plugin made by DS
 
-COMMANDS: you may also type /guerrilla instead of /g
+COMMANDS: you may also type /guerrillaPlugin instead of /g
 
 /g create <name> - creates a Guerrilla with the name <name>
 
-/g disband - deletes your guerrilla (only leader)
+/g disband - deletes your guerrillaPlugin (only leader)
 
 /g claim - claims the chunk you are standing on
 
-/g join <name> - joins the guerrilla you have been invited to
+/g join <name> - joins the guerrillaPlugin you have been invited to
 
-/g invite <player> - invites the player to your guerrilla
+/g invite <player> - invites the player to your guerrillaPlugin
 
-/g kick <player> - kicks a player from your guerrilla
+/g kick <player> - kicks a player from your guerrillaPlugin
 
 /g unclaim - unclaims the chunk you are standing on
 
@@ -54,19 +54,19 @@ COMMANDS: you may also type /guerrilla instead of /g
 
 /g list [page]- lists guerrillas
 
-/g who [guerrilla] - gives guerrilla info
+/g who [guerrillaPlugin] - gives guerrillaPlugin info
 
 /g pchestset - sets payment chest (then open it)
 
 /g pchestremove - removes payment chest (then open it)
 
-/g leave - leaves the guerrilla (not leaders)
+/g leave - leaves the guerrillaPlugin (not leaders)
 
 /g invitec <player> - cancel the invite for a player you've invited
 
 /g decline - cancels a invitation you've been send
 
-/gc - toggles intern guerrilla chat
+/gc - toggles intern guerrillaPlugin chat
 
 /g help prices - see current Guerrilla prices
 
@@ -74,7 +74,7 @@ COMMANDS: you may also type /guerrilla instead of /g
 
 /g safec (leader only) - sets a safe chest only you can open or destroy (toggles set/remove)
 
-/g changeleader [playername] - Changes the guerrilla leader
+/g changeleader [playername] - Changes the guerrillaPlugin leader
 
 Admin commands:
 
@@ -84,7 +84,7 @@ These only work if you are OP in the OP's txt. Be warned. The parameters for the
 
 /g adminremovesafechunk - remove safechunk
 
-/g adminsetleader <guerrilla> <leader> - change the leader of a guerrilla forcefully
+/g adminsetleader <guerrillaPlugin> <leader> - change the leader of a guerrillaPlugin forcefully
 
 # Config:
 
@@ -115,9 +115,9 @@ These only work if you are OP in the OP's txt. Be warned. The parameters for the
 
  *   winner: if someone has won, who. must be '' if no one has won.
 
- *   miniumplayersforasafechest: minimum number of players in a guerrilla needed to be able to create a safechest
+ *   miniumplayersforasafechest: minimum number of players in a guerrillaPlugin needed to be able to create a safechest
 
- *   guerrillaexpirytime: time a guerrilla will enter in inactivity and be deleted. in ticks.
+ *   guerrillaexpirytime: time a guerrillaPlugin will enter in inactivity and be deleted. in ticks.
 
  *   explosionProtection: Explosion protection. Are things allowed to explode in claimed territory? (tnt, creepers)
 
