@@ -1,5 +1,7 @@
 # Guerrillas
 
+![Travis CI Status Guerrilla Minecraft](https://travis-ci.org/spikedboy/Guerrilla.svg?branch=master)
+
 Guerrillas is a PVP gamemode I programmed long ago specifically for a server. I'm releasing it now because I've been
 asked for it somehow, but I'm completely ashamed of the code and I won't be releasing it. Other than that, you can do
 with it whatever you want. I will be occasionally updating it for new bukkit versions (ask me to if I haven't) or if
