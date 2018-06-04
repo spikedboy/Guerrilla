@@ -412,7 +412,7 @@ public class Guerrilla implements Serializable {
         }
     }
 
-    public void msgguespam(String msg) {
+    public void sendMessagePreventingSpam(String msg) {
         Date now = new Date();
         if ((this.antiSpam != null) && ((now.getTime() - this.antiSpam.getTime()) < 5000)) {
             return;

@@ -10,7 +10,7 @@ commands:
      description: 
      usage: type /g help [page] for more info
      permission:      
-   guerrillaPlugin:
+   guerrilla:
      description: 
      usage: type /guerrilla help [page] for more info
      permission: 

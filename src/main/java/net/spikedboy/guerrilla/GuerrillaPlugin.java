@@ -72,7 +72,7 @@ public class GuerrillaPlugin extends JavaPlugin {
 
         readConfigIntoVars();
 
-        if (!doesConfiguratedMapNameExist()) {
+        if (!doesConfiguredMapNameExist()) {
             return;
         }
 
@@ -188,9 +188,9 @@ public class GuerrillaPlugin extends JavaPlugin {
         }
     }
 
-    private boolean doesConfiguratedMapNameExist() {
+    private boolean doesConfiguredMapNameExist() {
         if (serverInstance.getWorld(GuerrillaConfigurations.gworldname) == null) {
-            LOGGER.info("[Guerrilla] El nombre del mapa especificado es erroneo! Cambialo y reinicia");
+            LOGGER.info("[Guerrilla] The name of the specified map is wrong! Change it and restart");
             return false;
         }
         return true;

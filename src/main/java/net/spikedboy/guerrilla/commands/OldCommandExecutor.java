@@ -192,7 +192,7 @@ public class OldCommandExecutor implements CommandExecutor {
                     }
                 } else if ((args[0].equalsIgnoreCase("pchestset"))) {
                     if (guerrilla.getLeader().equals(playurd.getName())) {
-                        guerrillaManager.getPlayerSetsBlock().put(playurd.getName(), new Boolean(true));
+                        guerrillaManager.getPlayerSetsBlock().put(playurd.getName(), Boolean.TRUE);
                         sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Payment chest waiting to be set, please open it");
                         return true;
                     }
@@ -240,7 +240,7 @@ public class OldCommandExecutor implements CommandExecutor {
                     }
                 } else if ((args[0].equalsIgnoreCase("pchestremove"))) {
                     if (guerrilla.getLeader().equals(playurd.getName())) {
-                        guerrillaManager.getPlayerSetsBlock().put(sender.getName(), new Boolean(false));
+                        guerrillaManager.getPlayerSetsBlock().put(sender.getName(), Boolean.FALSE);
                         sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Payment chest waiting to be removed, please open it");
                         return true;
                     }

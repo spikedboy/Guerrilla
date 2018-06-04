@@ -24,9 +24,8 @@ import java.util.logging.Logger;
 
 public class GuerrillaBlockListener implements Listener {
 
-    private Logger log = Logger.getLogger("Minecraft");
     private final GuerrillaPlugin guerrillaPlugin;
-
+    private Logger log = Logger.getLogger("Minecraft");
     @Inject
     private GuerrillaManager guerrillaManager;
 
@@ -62,19 +61,19 @@ public class GuerrillaBlockListener implements Listener {
                 || (event.getBlockReplacedState().getTypeId() == 11)) {
             return;
         }
-        if (guerrilla != null) {
-            if (!(guerrilla.ownsGuerrillaChunk(chunk))) {
+        if (isGuerrillaNotNull(guerrilla)) {
+            if (doesTheGuerrillaOwnTheChunk(guerrilla, chunk)) {
                 guerrillao
-                        .msgguespam("Someone tried to place a block in your territory");
+                        .sendMessagePreventingSpam("Someone tried to place a block in your territory");
                 // player.setVelocity(vn);
                 player.teleport(loc);
                 event.setCancelled(true);
                 player.setVelocity(new Vector(0, 0, 0));
             }
         } else {
-            if (guerrillao != null) {
+            if (isGuerrillaNotNull(guerrillao)) {
                 guerrillao
-                        .msgguespam("Someone tried to place a block in your territory");
+                        .sendMessagePreventingSpam("Someone tried to place a block in your territory");
                 // player.setVelocity(vn);
                 player.teleport(loc);
                 event.setCancelled(true);
@@ -97,63 +96,100 @@ public class GuerrillaBlockListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onBlockBreak(BlockBreakEvent event) {
-        Block eblock = event.getBlock();
-        Guerrilla guerrilla = guerrillaManager.getPlayerGuerrilla(event.getPlayer()); //Guerrilla object of the player that has broke the block
-        Chunk chunk = event.getBlock().getChunk();
-        Guerrilla guerrillao = guerrillaManager.getGuerrillaChunk(chunk); //Guerrilla object propietary of the chunk in which the block is in
+        Block blockEventHappenedIn = event.getBlock();
+        Guerrilla guerrillaOfPlayerBreakingBlock = guerrillaManager.getPlayerGuerrilla(event.getPlayer());
+
+        Chunk chunkTheBlockWasBrokenIn = event.getBlock().getChunk();
+        Guerrilla guerrillaOwnerOfTheChunkTheBrokenBlockWasIn = guerrillaManager.getGuerrillaChunk(chunkTheBlockWasBrokenIn);
+
         Player player = event.getPlayer();
 
-        if (eblock.getType() == Material.CHEST) {
-
-            Chest chest = (Chest) eblock.getState();
-            Guerrilla guchest = guerrillaManager.getGuerrillaSafeChest(chest);
-            String leadero = null;
-
-            if (guchest != null) {
-                leadero = guchest.getLeader();
-            }
-            if (leadero != null) {
-                if ((!(leadero.equals(player.getName())))) {
-                    Server server = guerrillaPlugin.getServer();
-
-                    if (server.getPlayer(leadero) != null)
-                        server
-                                .getPlayer(leadero)
-                                .sendMessage(
-                                        Messager.GUERRILLA_MESSAGE_PREFIX
-                                                + "Someone tried to break your safechest!");
-                    event.setCancelled(true);
-
-                } else if (leadero.equals(player.getName())) {
-                    player.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX
-                            + "Sorry! You can't do that! Safe chests are safe! From everyone!");
-                    event.setCancelled(true);
-                }
-            }
+        if (isBrokenBlockAChest(blockEventHappenedIn)) {
+            protectChestIfSafeChest(event, blockEventHappenedIn, player);
         }
 
-        if (eblock.getType() == Material.BED_BLOCK) {
+        if (isBlockBrokenBedType(blockEventHappenedIn)) {
             return;
         }
 
-        if (guerrilla != null) {
-
-            if (!(guerrilla.ownsGuerrillaChunk(chunk))) {
-
-                event.setCancelled(true);
-                guerrillao
-                        .msgguespam("Someone tried to destroy a block in your territory");
-
+        if (isGuerrillaNotNull(guerrillaOfPlayerBreakingBlock)) {
+            if (doesTheGuerrillaOwnTheChunk(guerrillaOfPlayerBreakingBlock, chunkTheBlockWasBrokenIn)) {
+                cancelBlockBreakingEventAndMessageOwner(event, guerrillaOwnerOfTheChunkTheBrokenBlockWasIn);
             }
-
         } else {
-            if (guerrillao != null) {
-                guerrillao
-                        .msgguespam("Someone tried to destroy a block in your territory");
-                event.setCancelled(true);
+            if (isGuerrillaNotNull(guerrillaOwnerOfTheChunkTheBrokenBlockWasIn)) {
+                cancelBlockBreakingEventAndMessageOwner(event, guerrillaOwnerOfTheChunkTheBrokenBlockWasIn);
             }
         }
 
+    }
+
+    private boolean isBlockBrokenBedType(Block blockEventHappenedIn) {
+        return Material.BED_BLOCK.equals(blockEventHappenedIn.getType());
+    }
+
+    private boolean doesTheGuerrillaOwnTheChunk(Guerrilla guerrillaOfPlayerBreakingBlock, Chunk chunkTheBlockWasBrokenIn) {
+        return !(guerrillaOfPlayerBreakingBlock.ownsGuerrillaChunk(chunkTheBlockWasBrokenIn));
+    }
+
+    private boolean isGuerrillaNotNull(Guerrilla guerrilla) {
+        return guerrilla != null;
+    }
+
+    private void cancelBlockBreakingEventAndMessageOwner(BlockBreakEvent event,
+                                                         Guerrilla guerrillaOwnerOfTheChunkTheBrokenBlockWasIn) {
+        guerrillaOwnerOfTheChunkTheBrokenBlockWasIn
+                .sendMessagePreventingSpam("Someone tried to destroy a block in your territory");
+        event.setCancelled(true);
+    }
+
+    private void protectChestIfSafeChest(BlockBreakEvent event, Block blockEventHappenedIn, Player playerTriggeringEvent) {
+        Chest chest = (Chest) blockEventHappenedIn.getState();
+        Guerrilla ownerGuerrillaOfSafeChest = guerrillaManager.getGuerrillaSafeChest(chest);
+
+        if (isGuerrillaNotNull(ownerGuerrillaOfSafeChest)) {
+            String playerNameLeaderChestOwnerGuerrilla = ownerGuerrillaOfSafeChest.getLeader();
+
+            event.setCancelled(true);
+
+            if (playerNameLeaderChestOwnerGuerrilla != null) {
+                if (isPlayerTriggeringEventNotLeaderOfOwnerGuerrilla(playerTriggeringEvent, playerNameLeaderChestOwnerGuerrilla)) {
+                    notifyOwnerOfBlockBreakingIfOnline(event, playerNameLeaderChestOwnerGuerrilla);
+                } else if (isPlayerTheLeaderOfTheGuerrilla(playerTriggeringEvent, playerNameLeaderChestOwnerGuerrilla)) {
+                    playerTriggeringEvent.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX
+                            + "Sorry! You can't do that! Safe chests are safe! From everyone!");
+                }
+            }
+        }
+    }
+
+    private boolean isPlayerTheLeaderOfTheGuerrilla(Player playerTriggeringEvent, String playerNameLeaderChestOwnerGuerrilla) {
+        return playerNameLeaderChestOwnerGuerrilla.equals(playerTriggeringEvent.getName());
+    }
+
+    private void notifyOwnerOfBlockBreakingIfOnline(BlockBreakEvent event, String playerNameLeaderChestOwnerGuerrilla) {
+        Server server = guerrillaPlugin.getServer();
+
+        if (isChestOwnerOnline(playerNameLeaderChestOwnerGuerrilla, server)) {
+            messageOwnerSafeChestBrokenWarning(playerNameLeaderChestOwnerGuerrilla, server);
+        }
+    }
+
+    private void messageOwnerSafeChestBrokenWarning(String playerNameLeaderChestOwnerGuerrilla, Server server) {
+        server.getPlayer(playerNameLeaderChestOwnerGuerrilla).sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX
+                                + "Someone tried to break your safechest!");
+    }
+
+    private boolean isChestOwnerOnline(String playerNameLeaderChestOwnerGuerrilla, Server server) {
+        return server.getPlayer(playerNameLeaderChestOwnerGuerrilla) != null;
+    }
+
+    private boolean isPlayerTriggeringEventNotLeaderOfOwnerGuerrilla(Player playerTriggeringEvent, String playerNameLeaderChestOwnerGuerrilla) {
+        return !playerNameLeaderChestOwnerGuerrilla.equals(playerTriggeringEvent.getName());
+    }
+
+    private boolean isBrokenBlockAChest(Block blockEventHappenedIn) {
+        return Material.CHEST.equals(blockEventHappenedIn.getType());
     }
 
     public void setGuerrillaManager(GuerrillaManager guerrillaManager) {

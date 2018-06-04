@@ -29,7 +29,8 @@ public class GuerrillaWorldListener implements Listener {
     @EventHandler
     public void onWorldSave(WorldSaveEvent event) {
         try {
-            //GuerrillaPlugin.LOGGER.info("[Guerrilla] Saving..");
+            LOGGER.info("[Guerrilla] Saving..");
+
             for (Guerrilla guerrilla : guerrillaManager.getGuerrillaList()) {
                 for (ArrayList<Integer> chestc : guerrilla.getPaymentChests()) {
                     if (guerrillaPlugin.getServer().getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestc.get(0),
@@ -42,7 +43,7 @@ public class GuerrillaWorldListener implements Listener {
                 }
             }
 
-            //Guerrilla.save();
+            guerrillaManager.save();
         } catch (Exception e) {
             e.printStackTrace();
         }

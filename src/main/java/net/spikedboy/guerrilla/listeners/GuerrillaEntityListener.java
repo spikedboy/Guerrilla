@@ -48,7 +48,7 @@ public class GuerrillaEntityListener implements Listener {
                 return;
             }
             if (owner == null) continue;
-            owner.msgguespam("Something exploded in your territory");
+            owner.sendMessagePreventingSpam("Something exploded in your territory");
             if (GuerrillaConfigurations.tntProtection) {
                 event.setCancelled(true);
                 return;

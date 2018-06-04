@@ -50,7 +50,7 @@ local.properties
 .recommenders/
 
 # Scala IDE specific (Scala & Java development for Eclipse)
-.cache-guerrilla
+.cache-main
 .scala_dependencies
 .worksheet
 

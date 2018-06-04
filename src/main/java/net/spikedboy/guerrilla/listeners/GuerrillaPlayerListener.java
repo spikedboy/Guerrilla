@@ -124,7 +124,7 @@ public class GuerrillaPlayerListener implements Listener {
                 if (dcd != null) {
                     guerrillaManager.getDelayedClaimDataQueue().removeNode(dcd);
                     Guerrilla gowner = guerrillaManager.getGuerrillaChunk(fchunk);
-                    player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You left the claim area! You loose! Good day sir");
+                    player.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "You left the claim area! You loose! Good day sir");
                     gowner.msggue("Your atacker left!");
                     int id = dcd.getThreadID();
                     server.getScheduler().cancelTask(id);
@@ -144,10 +144,10 @@ public class GuerrillaPlayerListener implements Listener {
         }
 
         if ((fguerrilla != tguerrilla) && tguerrilla != null) {
-            player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You're entering " + tguerrilla.getName() + "'s territory");
+            player.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "You're entering " + tguerrilla.getName() + "'s territory");
         }
         if ((fguerrilla != tguerrilla) && tguerrilla == null) {
-            player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You left " + fguerrilla.getName() + "'s territory");
+            player.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "You left " + fguerrilla.getName() + "'s territory");
         }
     }
 
@@ -261,18 +261,18 @@ public class GuerrillaPlayerListener implements Listener {
                 if (b2) {
                     if (guerrillaManager.getPlayerGuerrilla(event.getPlayer()).addPaymentChest(chest)) {
                         guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
-                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "Payment chest set");
+                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "Payment chest set");
                     } else {
                         guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
-                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That chest is already set");
+                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "That chest is already set");
                     }
                 } else {
                     if (guerrillaManager.getPlayerGuerrilla(event.getPlayer()).removePaymentChest(chest)) {
                         guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
-                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "Payment chest removed");
+                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "Payment chest removed");
                     } else {
                         guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
-                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That is not a payment chest");
+                        event.getPlayer().sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "That is not a payment chest");
                     }
                 }
             }
