@@ -100,7 +100,7 @@ public class Guerrilla extends JavaPlugin {
         }
 
         //payment thread
-        paymentThreadId = this.getServer().getScheduler().scheduleAsyncRepeatingTask(this, new Runnable() {
+        paymentThreadId = this.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             public void run() {
                 if (GuerrillaG.checkWinners() != null) {
                     stateWon = true;
@@ -511,7 +511,7 @@ public class Guerrilla extends JavaPlugin {
         clistn.add(chunkZ);
         final ArrayList<Double> clist = clistn;
 
-        final Integer dclaimid = sinst.getScheduler().scheduleAsyncDelayedTask(ginst, new Runnable() {
+        final Integer dclaimid = sinst.getScheduler().scheduleSyncDelayedTask(ginst, new Runnable() {
             public void run() {
                 DelayedClaimData dcd = delayedClaimDataQueue.search(claimer.getName());
 

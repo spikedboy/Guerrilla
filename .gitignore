@@ -54,6 +54,7 @@ local.properties
 .scala_dependencies
 .worksheet
 
+# idea and maven
 .idea/
-
+target/
 *.iml
