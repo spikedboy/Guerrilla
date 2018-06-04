@@ -6,7 +6,8 @@
 
     <groupId>com.spikedboy.guerrilla</groupId>
     <artifactId>Guerrilla</artifactId>
-    <version>0.3-SNAPSHOT</version>
+    <version>0.3</version>
+    <packaging>jar</packaging>
 
     <repositories>
         <repository>
@@ -45,6 +46,7 @@
     </dependencies>
 
     <build>
+        <finalName>Guerrilla-plugin</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

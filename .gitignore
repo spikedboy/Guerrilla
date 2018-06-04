@@ -50,10 +50,11 @@ local.properties
 .recommenders/
 
 # Scala IDE specific (Scala & Java development for Eclipse)
-.cache-guerrillaPlugin
+.cache-guerrilla
 .scala_dependencies
 .worksheet
 
+# idea and maven
 .idea/
-
+target/
 *.iml
