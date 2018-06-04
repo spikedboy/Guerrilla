@@ -57,7 +57,7 @@ public class OldCommandExecutor implements CommandExecutor {
         }
         if (GuerrillaManager.isStateWon() == true) {
             playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "This round has ended, wait for an admin to start a new match! The winner was the "
-                    + GuerrillaManager.getWinnerGuerrillaName() + "'s guerrillaPlugin");
+                    + GuerrillaManager.getWinnerGuerrillaName() + "'s guerrilla");
             return true;
         }
 
@@ -66,23 +66,23 @@ public class OldCommandExecutor implements CommandExecutor {
                 if (args.length < 1) {
                     if (guerrillaManager.getTogglePlayerChat().get(playurd.getName()) == null || guerrillaManager.getTogglePlayerChat().get(playurd.getName()) == false) {
                         guerrillaManager.getTogglePlayerChat().put(playurd.getName(), true);
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "GuerrillaPlugin chat enabled");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Guerrilla chat enabled");
                     } else if (guerrillaManager.getTogglePlayerChat().get(playurd.getName()) == true) {
                         guerrillaManager.getTogglePlayerChat().put(playurd.getName(), false);
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "GuerrillaPlugin chat disabled");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Guerrilla chat disabled");
                     }
                     return true;
                 } else {
                     return false;
                 }
             } else {
-                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no guerrillaPlugin");
+                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no guerrilla");
                 return true;
             }
 
         }
 
-        if ((commandLabel.equalsIgnoreCase("g")) || (commandLabel.equalsIgnoreCase("guerrillaPlugin"))) {
+        if ((commandLabel.equalsIgnoreCase("g")) || (commandLabel.equalsIgnoreCase("guerrilla"))) {
 
             if (args.length >= 1) {
                 if ((args[0].equalsIgnoreCase("changeleader"))) {
@@ -95,7 +95,7 @@ public class OldCommandExecutor implements CommandExecutor {
                     }
                 } else if ((args[0].equalsIgnoreCase("safec"))) {
                     if (guerrilla == null) {
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no GuerrillaPlugin");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no guerrilla");
                         return true;
                     }
                     //if false deletechest, if true addchest
@@ -116,7 +116,8 @@ public class OldCommandExecutor implements CommandExecutor {
                     if (args.length == 2) {
                         if (args[1].equalsIgnoreCase("prices")) {
 
-                            playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + GuerrillaConfigurations.chunkprice + " " + Material.getMaterial(GuerrillaConfigurations.itemid).toString()
+                            playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + GuerrillaConfigurations.chunkprice
+                                    + " " + Material.getMaterial(GuerrillaConfigurations.itemid).toString()
                                     + " for each unclaimed chunk claim, and " + GuerrillaConfigurations.chunkprice * GuerrillaConfigurations.conqmulti
                                     + " for every conquest");
 
@@ -139,12 +140,12 @@ public class OldCommandExecutor implements CommandExecutor {
                         switch (pnumber) {
                             case 1: {
                                 playurd.sendMessage(ChatColor.DARK_RED + "[Page 1/4]");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "This is the GuerrillaPlugin help :) Plugin made by DS");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "COMMANDS: *you may also type /guerrillaPlugin instead of /g*");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g disband - deletes your guerrillaPlugin (only leader)");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "This is the Guerrilla help :) Plugin made by DS");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "COMMANDS: *you may also type /guerrilla instead of /g*");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g disband - deletes your guerrilla (only leader)");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g claim - claims the chunk you are standing on");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g join <name> - joins the guerrillaPlugin you have been invited to");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g invite <player> - invites the player to your guerrillaPlugin");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g join <name> - joins the guerrilla you have been invited to");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g invite <player> - invites the player to your guerrilla");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g kick <player> - kicks a player");
                                 return true;
 
@@ -154,39 +155,39 @@ public class OldCommandExecutor implements CommandExecutor {
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g unclaim - unclaims the chunk you are standing on");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g unclaimall - unclaims all the chunks (leaders only)");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g list [page]- lists guerrillas");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g who [guerrillaPlugin] - gives guerrillaPlugin info");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g who [Guerrilla] - gives guerrilla info");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g pchestset - sets payment chest (then open it)");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g pchestremove - removes payment chest (then open it)");
                                 return true;
                             }
                             case 3: {
                                 playurd.sendMessage(ChatColor.DARK_RED + "[Page 3/4]");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g leave - leaves the guerrillaPlugin (not leaders)");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g leave - leaves the guerrilla (not leaders)");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g invitec <player> - cancel the invite for a player you've invited");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g decline - cancels a invitation you've been send");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/gc - toggles intern guerrillaPlugin chat");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g help prices - see current GuerrillaPlugin prices");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/gc - toggles intern guerrilla chat");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g help prices - see current guerrilla prices");
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g safec (leader only) - sets a safe chest only you can open or destroy (toggles set/remove)");
                                 return true;
                             }
                             case 4: {
                                 playurd.sendMessage(ChatColor.DARK_RED + "[Page 4/4]");
-                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g changeleader [playername] - Changes the guerrillaPlugin leader");
+                                playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g changeleader [playername] - Changes the guerrilla leader");
                                 return true;
                             }
                         }
                     } else if (args.length == 1) {
                         playurd.sendMessage(ChatColor.DARK_RED + "[Page 1/4]");
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "This is the GuerrillaPlugin help :) Plugin made by DS");
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "COMMANDS: *you may also type /guerrillaPlugin instead of /g*");
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g disband - deletes your guerrillaPlugin (only leader)");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "This is the Guerrilla help :) Plugin made by DS");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "COMMANDS: *you may also type /guerrilla instead of /g*");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g disband - deletes your guerrilla (only leader)");
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g claim - claims the chunk you are standing on");
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g join <name> - joins the guerrillaPlugin you have been invited to");
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g invite <player> - invites the player to your guerrillaPlugin");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g join <name> - joins the guerrilla you have been invited to");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g invite <player> - invites the player to your guerrilla");
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/g kick <player> - kicks a player");
                         return true;
                     } else {
-                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "type /guerrillaPlugin help [page] for more info");
+                        playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "type /guerrilla help [page] for more info");
                         return true;
                     }
                 } else if ((args[0].equalsIgnoreCase("pchestset"))) {
@@ -199,9 +200,9 @@ public class OldCommandExecutor implements CommandExecutor {
                     return true;
                 } else if ((args[0].equalsIgnoreCase("adminsetatkbonus"))) {
                     if (playurd.isOp()) {
-                        guerrillaPlugin.getConfig().set("guerrillaPlugin.defenderdamagedealtmultiplier", Integer.parseInt(args[1]));
+                        guerrillaPlugin.getConfig().set("guerrilla.defenderdamagedealtmultiplier", Integer.parseInt(args[1]));
                         guerrillaPlugin.saveConfig();
-                        GuerrillaConfigurations.atkbonus = guerrillaPlugin.getConfig().getInt("guerrillaPlugin.defenderdamagedealtmultiplier", 1);
+                        GuerrillaConfigurations.atkbonus = guerrillaPlugin.getConfig().getInt("guerrilla.defenderdamagedealtmultiplier", 1);
                         playurd.sendMessage(String.valueOf(GuerrillaConfigurations.atkbonus));
                         return true;
                     } else {
@@ -218,9 +219,9 @@ public class OldCommandExecutor implements CommandExecutor {
                     }
                 } else if ((args[0].equalsIgnoreCase("setnminmaintprice"))) {
                     if (playurd.isOp()) {
-                        guerrillaPlugin.getConfig().set("guerrillaPlugin.nchunksminmaintenance", Integer.parseInt(args[1]));
+                        guerrillaPlugin.getConfig().set("guerrilla.nchunksminmaintenance", Integer.parseInt(args[1]));
                         guerrillaPlugin.saveConfig();
-                        GuerrillaConfigurations.nchunkpay = guerrillaPlugin.getConfig().getInt("guerrillaPlugin.nchunksminmaintenance", 4);
+                        GuerrillaConfigurations.nchunkpay = guerrillaPlugin.getConfig().getInt("guerrilla.nchunksminmaintenance", 4);
                         playurd.sendMessage("" + GuerrillaConfigurations.nchunkpay);
                         return true;
                     }
@@ -260,7 +261,7 @@ public class OldCommandExecutor implements CommandExecutor {
                         guerrilla.unclaimall((Player) sender);
                         return true;
                     }
-                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no guerrillaPlugin");
+                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no guerrilla");
                     return true;
                 } else if ((args[0].equalsIgnoreCase("kick"))) {
                     if (args.length == 2) {
@@ -268,11 +269,11 @@ public class OldCommandExecutor implements CommandExecutor {
                             guerrilla.kick(args[1], playurd);
                             return true;
                         } else {
-                            sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Can't do that! You must have a guerrillaPlugin");
+                            sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Can't do that! You must have a guerrilla");
                             return true;
                         }
                     }
-                    sender.sendMessage("/guerrillaPlugin kick [player]");
+                    sender.sendMessage("/guerrilla kick [player]");
                     return true;
                 } else if ((args[0].equalsIgnoreCase("leave"))) {
                     guerrillaManager.leave((Player) sender);
@@ -306,7 +307,7 @@ public class OldCommandExecutor implements CommandExecutor {
                         sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Player not found");
                         return true;
                     }
-                    sender.sendMessage("/guerrillaPlugin invite [playername]");
+                    sender.sendMessage("/guerrilla invite [playername]");
                     return true;
                 } else if ((args[0].equalsIgnoreCase("invitec"))) {
                     if (args.length == 2) {
@@ -336,11 +337,11 @@ public class OldCommandExecutor implements CommandExecutor {
                             guerrillan.join((Player) sender);
                             return true;
                         }
-                        sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "That guerrillaPlugin doesn't exist");
+                        sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "That guerrilla doesn't exist");
                         return true;
 
                     }
-                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/guerrillaPlugin join name");
+                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/guerrilla join name");
                     return true;
                 } else if ((args[0].equalsIgnoreCase("claim"))) {
                     Player player = (Player) sender;
@@ -348,7 +349,7 @@ public class OldCommandExecutor implements CommandExecutor {
                         guerrilla.claim(chunk, player);
                         return true;
                     }
-                    player.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no guerrillaPlugin");
+                    player.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no guerrilla");
                     return true;
                 } else if ((args[0].equalsIgnoreCase("unclaim"))) {
                     Player player = (Player) sender;
@@ -362,7 +363,7 @@ public class OldCommandExecutor implements CommandExecutor {
                     if (args.length == 2) {
                         if (guerrillaManager.getPlayerGuerrilla((Player) sender) == null) {
                             if (guerrillaManager.getGuerrillaByName(args[1]) != null) {
-                                sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "That guerrillaPlugin already exists! Please choose another name");
+                                sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "That guerrilla already exists! Please choose another name");
                                 return true;
                             }
                             if (args[1].length() > 10) {
@@ -376,11 +377,11 @@ public class OldCommandExecutor implements CommandExecutor {
                             //sender.sendMessage(GUERRILLA_MESSAGE_PREFIX + "You created the "+ guerrillaPlugin.getName() +" guerrillaPlugin");
                             return true;
                         }
-                        sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have already joined a guerrillaPlugin");
+                        sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have already joined a guerrilla");
                         return true;
 
                     }
-                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/guerrillaPlugin create [guerrillaPlugin name]");
+                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "/guerrilla create [guerrilla name]");
                     return true;
                 } else if (args[0].equalsIgnoreCase("disband")) {
                     if (args.length == 2) {
@@ -389,10 +390,10 @@ public class OldCommandExecutor implements CommandExecutor {
                             guerrilla.disband(player);
                             return true;
                         }
-                        sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You can't disband other guerrillaPlugin than your own!");
+                        sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You can't disband other guerrilla than your own!");
                         return true;
                     }
-                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Are you sure? type /guerrillaPlugin disband [yourguerrillaname] to disband");
+                    sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Are you sure? type /guerrilla disband [yourguerrillaname] to disband");
                     return true;
                 }
 

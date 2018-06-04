@@ -262,7 +262,7 @@ public class Guerrilla implements Serializable {
                 if (price > GuerrillaConfigurations.maintmaxprice) price = GuerrillaConfigurations.maintmaxprice;
                 guerrillaManager.removeInventoryItems(chest.getInventory(), Material.getMaterial(GuerrillaConfigurations.itemidmaint), (price));
                 paid = true;
-                msggue("Payments issued, cost: " + price + ", thank you: Att. Tom Nook");
+                msggue("Payments issued, cost: " + price + ", thank you");
                 break;
             }
         }

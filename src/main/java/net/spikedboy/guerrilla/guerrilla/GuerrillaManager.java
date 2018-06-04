@@ -1,6 +1,7 @@
 package net.spikedboy.guerrilla.guerrilla;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.Singleton;
 import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
 import net.spikedboy.guerrilla.landclaim.DelayedClaimData;
@@ -41,6 +42,9 @@ public class GuerrillaManager {
 
     @Inject
     private Messager messager;
+    
+    @Inject
+    private Injector injector;
 
     private final Map<String, Boolean> playerSetsSafe = new HashMap<>();
     private final DelayedClaimDataQueue delayedClaimDataQueue = new DelayedClaimDataQueue();
@@ -272,7 +276,7 @@ public class GuerrillaManager {
 
     public void save() throws Exception {
         saveFunc(guerrillaList, SAVED_GUERRILLAS_FILENAME);
-        saveFunc(safeChunks, "GuerrillaSafe.bin");
+        saveFunc(safeChunks, GUERRILLA_SAFE_BIN);
     }
 
     public void map(Block block, Player sender) {
@@ -434,10 +438,14 @@ public class GuerrillaManager {
 
     public void load() throws Exception {
         File gFile = new File(SAVED_GUERRILLAS_FILENAME);
-        File sChunks = new File("GuerrillaSafe.bin");
+        File sChunks = new File(GUERRILLA_SAFE_BIN);
 
         if (gFile.exists()) {
-            setGuerrillaList((ArrayList<Guerrilla>) loadFunc(SAVED_GUERRILLAS_FILENAME));
+            ArrayList<Guerrilla> guerrillaList = (ArrayList<Guerrilla>) loadFunc(SAVED_GUERRILLAS_FILENAME);
+            for (Guerrilla guerrilla : guerrillaList) {
+                injector.injectMembers(guerrilla);
+            }
+            setGuerrillaList(guerrillaList);
         } else {
             gFile.createNewFile();
         }
