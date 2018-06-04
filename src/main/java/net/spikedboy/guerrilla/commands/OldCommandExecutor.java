@@ -1,6 +1,7 @@
 package net.spikedboy.guerrilla.commands;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import net.spikedboy.guerrilla.GuerrillaPlugin;
 import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
 import net.spikedboy.guerrilla.guerrilla.Guerrilla;
@@ -22,6 +23,9 @@ public class OldCommandExecutor implements CommandExecutor {
 
     @Inject
     private GuerrillaManager guerrillaManager;
+
+    @Inject
+    private Injector injector;
 
     @Override
     public boolean processCommands(CommandSender sender, Command cmd, String commandLabel, String[] args) {
@@ -51,20 +55,20 @@ public class OldCommandExecutor implements CommandExecutor {
             playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You can't do that in this world");
             return true;
         }
-        if (GuerrillaPlugin.stateWon == true) {
+        if (GuerrillaManager.isStateWon() == true) {
             playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "This round has ended, wait for an admin to start a new match! The winner was the "
-                    + GuerrillaPlugin.winnerGuerrillaName + "'s guerrillaPlugin");
+                    + GuerrillaManager.getWinnerGuerrillaName() + "'s guerrillaPlugin");
             return true;
         }
 
         if (commandLabel.equalsIgnoreCase("gc")) {
             if (guerrilla != null) {
                 if (args.length < 1) {
-                    if (GuerrillaPlugin.togglePlayerChat.get(playurd.getName()) == null || GuerrillaPlugin.togglePlayerChat.get(playurd.getName()) == false) {
-                        GuerrillaPlugin.togglePlayerChat.put(playurd.getName(), true);
+                    if (guerrillaManager.getTogglePlayerChat().get(playurd.getName()) == null || guerrillaManager.getTogglePlayerChat().get(playurd.getName()) == false) {
+                        guerrillaManager.getTogglePlayerChat().put(playurd.getName(), true);
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "GuerrillaPlugin chat enabled");
-                    } else if (GuerrillaPlugin.togglePlayerChat.get(playurd.getName()) == true) {
-                        GuerrillaPlugin.togglePlayerChat.put(playurd.getName(), false);
+                    } else if (guerrillaManager.getTogglePlayerChat().get(playurd.getName()) == true) {
+                        guerrillaManager.getTogglePlayerChat().put(playurd.getName(), false);
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "GuerrillaPlugin chat disabled");
                     }
                     return true;
@@ -99,13 +103,13 @@ public class OldCommandExecutor implements CommandExecutor {
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You are not leader");
                         return true;
                     }
-                    if (GuerrillaPlugin.playerSetsSafe.get(playurd.getName()) == null || GuerrillaPlugin.playerSetsSafe.get(playurd.getName()) == false) {
+                    if (guerrillaManager.getPlayerSetsSafe().get(playurd.getName()) == null || guerrillaManager.getPlayerSetsSafe().get(playurd.getName()) == false) {
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Setting safe chest");
-                        GuerrillaPlugin.playerSetsSafe.put(playurd.getName(), Boolean.TRUE);
+                        guerrillaManager.getPlayerSetsSafe().put(playurd.getName(), Boolean.TRUE);
                         return true;
-                    } else if (GuerrillaPlugin.playerSetsSafe.get(playurd.getName()) == true) {
+                    } else if (guerrillaManager.getPlayerSetsSafe().get(playurd.getName()) == true) {
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Removing safe chest");
-                        GuerrillaPlugin.playerSetsSafe.put(playurd.getName(), Boolean.FALSE);
+                        guerrillaManager.getPlayerSetsSafe().put(playurd.getName(), Boolean.FALSE);
                         return true;
                     }
                 } else if ((args[0].equalsIgnoreCase("help"))) {
@@ -120,7 +124,7 @@ public class OldCommandExecutor implements CommandExecutor {
                                     + Material.getMaterial(GuerrillaConfigurations.itemidmaint).toString() + " every " + GuerrillaConfigurations.nchunkpay
                                     + " chunks, with a max of: " + GuerrillaConfigurations.maintmaxprice);
                             if (guerrilla != null) {
-                                int price = guerrilla.territories.size() / GuerrillaConfigurations.nchunkpay * GuerrillaConfigurations.chunkmaintprice;
+                                int price = guerrilla.getTerritories().size() / GuerrillaConfigurations.nchunkpay * GuerrillaConfigurations.chunkmaintprice;
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You are currently paying: " + price
                                         + " per minecraft day. \nEach real day: " + (price * 72));
                             }
@@ -187,7 +191,7 @@ public class OldCommandExecutor implements CommandExecutor {
                     }
                 } else if ((args[0].equalsIgnoreCase("pchestset"))) {
                     if (guerrilla.getLeader().equals(playurd.getName())) {
-                        GuerrillaPlugin.playerSetsBlock.put(playurd.getName(), new Boolean(true));
+                        guerrillaManager.getPlayerSetsBlock().put(playurd.getName(), new Boolean(true));
                         sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Payment chest waiting to be set, please open it");
                         return true;
                     }
@@ -206,10 +210,10 @@ public class OldCommandExecutor implements CommandExecutor {
                 } else if ((args[0].equalsIgnoreCase("adminsetleader"))) {
                     if (playurd.isOp()) {
                         Guerrilla guerrillz = guerrillaManager.getGuerrillaByName(args[1]);
-                        guerrillz.leader = args[2];
-                        guerrillz.players.add(playurd.getName());
-                        if (guerrilla != null) guerrilla.players.remove(playurd.getName());
-                        sender.sendMessage(" Leader: " + guerrillz.leader);
+                        guerrillz.setLeader(args[2]);
+                        guerrillz.getPlayers().add(playurd.getName());
+                        if (guerrilla != null) guerrilla.getPlayers().remove(playurd.getName());
+                        sender.sendMessage(" Leader: " + guerrillz.getLeader());
                         return true;
                     }
                 } else if ((args[0].equalsIgnoreCase("setnminmaintprice"))) {
@@ -235,7 +239,7 @@ public class OldCommandExecutor implements CommandExecutor {
                     }
                 } else if ((args[0].equalsIgnoreCase("pchestremove"))) {
                     if (guerrilla.getLeader().equals(playurd.getName())) {
-                        GuerrillaPlugin.playerSetsBlock.put(sender.getName(), new Boolean(false));
+                        guerrillaManager.getPlayerSetsBlock().put(sender.getName(), new Boolean(false));
                         sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Payment chest waiting to be removed, please open it");
                         return true;
                     }
@@ -365,7 +369,9 @@ public class OldCommandExecutor implements CommandExecutor {
                                 playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "The name is too long, max. 10 characters");
                                 return true;
                             }
-                            Guerrilla guerrillan = new Guerrilla((Player) sender, args[1]);
+//                            Guerrilla guerrillan = new Guerrilla((Player) sender, args[1]);
+                            Guerrilla guerrillan = injector.getInstance(Guerrilla.class);
+                            guerrillan.initiateNewGuerrilla((Player) sender, args[1]);
                             guerrillaManager.getGuerrillaList().add(guerrillan);
                             //sender.sendMessage(GUERRILLA_MESSAGE_PREFIX + "You created the "+ guerrillaPlugin.getName() +" guerrillaPlugin");
                             return true;

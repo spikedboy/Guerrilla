@@ -3,6 +3,7 @@ package net.spikedboy.guerrilla.commands.commandprocessors;
 import com.google.inject.Inject;
 import net.spikedboy.guerrilla.GuerrillaPlugin;
 import net.spikedboy.guerrilla.commands.CommandProcessor;
+import net.spikedboy.guerrilla.guerrilla.GuerrillaManager;
 import net.spikedboy.guerrilla.guerrilla.Messager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -12,7 +13,11 @@ import java.util.Map;
 
 public class ToggleGuerrillaChat implements CommandProcessor {
 
+    @Inject
     private GuerrillaPlugin guerrillaPlugin;
+
+    @Inject
+    private GuerrillaManager guerrillaManager;
 
     @Override
     public Boolean processCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
@@ -22,7 +27,7 @@ public class ToggleGuerrillaChat implements CommandProcessor {
         if (commandLabel.equalsIgnoreCase("gc")) {
             if (guerrillaPlugin != null) {
                 if (args.length < 1) {
-                    Map<String, Boolean> togglePlayerChat = GuerrillaPlugin.togglePlayerChat;
+                    Map<String, Boolean> togglePlayerChat = guerrillaManager.getTogglePlayerChat();
                     if (togglePlayerChat.get(playurd.getName()) == null || togglePlayerChat.get(playurd.getName()) == false) {
                         togglePlayerChat.put(playurd.getName(), true);
                         playurd.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "GuerrillaPlugin chat enabled");
@@ -43,8 +48,11 @@ public class ToggleGuerrillaChat implements CommandProcessor {
         return null;
     }
 
-    @Inject
     public void setGuerrillaPlugin(GuerrillaPlugin guerrillaPlugin) {
         this.guerrillaPlugin = guerrillaPlugin;
+    }
+
+    public void setGuerrillaManager(GuerrillaManager guerrillaManager) {
+        this.guerrillaManager = guerrillaManager;
     }
 }

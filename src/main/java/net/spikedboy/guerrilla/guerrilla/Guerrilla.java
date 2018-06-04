@@ -1,8 +1,11 @@
 package net.spikedboy.guerrilla.guerrilla;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import net.spikedboy.guerrilla.GuerrillaPlugin;
 import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
+import net.spikedboy.guerrilla.landclaim.DelayedClaimData;
+import net.spikedboy.guerrilla.landclaim.DelayedClaimRunner;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -25,34 +28,46 @@ public class Guerrilla implements Serializable {
     private static final long serialVersionUID = 5277397633585310503L;
 
     @Inject
-    private GuerrillaManager guerrillaManager;
+    private transient GuerrillaManager guerrillaManager;
 
     @Inject
-    private GuerrillaPlugin guerrillaPlugin;
+    private transient GuerrillaPlugin guerrillaPlugin;
 
     @Inject
-    private Messager messager;
+    private transient Messager messager;
 
-    public final ArrayList<ArrayList<Integer>> territories = new ArrayList<>();
-    public final ArrayList<String> players = new ArrayList<>();
-    public final ArrayList<ArrayList<Integer>> paymentChests = new ArrayList<>();
+    @Inject
+    private transient Server server;
 
-    final ArrayList<String> invites = new ArrayList<>();
+    @Inject
+    private transient Injector injector;
 
-    public String leader;
-    public Date date;
-    public Date quitPunishmentDate;
+    private final ArrayList<ArrayList<Integer>> territories = new ArrayList<>();
+    private final ArrayList<String> players = new ArrayList<>();
+    private final ArrayList<ArrayList<Integer>> paymentChests = new ArrayList<>();
 
-    public int numberOfClaimedChunks = 0;
+    private final ArrayList<String> invites = new ArrayList<>();
 
-    ArrayList<ArrayList<Integer>> safeChest = new ArrayList<>(); //chest block xzy
+    private String leader;
+    private Date date;
+    private Date quitPunishmentDate;
 
-    String name;
+    private int numberOfClaimedChunks = 0;
+
+    private ArrayList<ArrayList<Integer>> safeChest = new ArrayList<>(); //chest block xzy
+
+    private String name;
     private Date antiSpam;
 
-    private Server server;
+
+    public Guerrilla() {
+    }
 
     public Guerrilla(Player player, String args) {
+        initiateNewGuerrilla(player, args);
+    }
+
+    public void initiateNewGuerrilla(Player player, String args) {
         players.add(player.getName());
         leader = player.getName();
         name = args;
@@ -62,12 +77,10 @@ public class Guerrilla implements Serializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
-        server = guerrillaPlugin.getServer();
     }
 
     public boolean isBeingClaimed() {
-        return GuerrillaPlugin.delayedClaimDataQueue.search(this, 1) != null;
+        return guerrillaManager.getDelayedClaimDataQueue().search(this, 1) != null;
     }
 
     int adyChunks(Chunk chunk) {
@@ -121,40 +134,40 @@ public class Guerrilla implements Serializable {
 
         if (!guerrillaManager.isLeader(sender)) {
             sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You are not leader");
-            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            guerrillaManager.getPlayerSetsSafe().remove(sender.getName());
             return;
         }
         if (safeChest == null) safeChest = new ArrayList<>();
         int np = countPlayers();
-        if (GuerrillaConfigurations.minPSC > np) {
+        if (GuerrillaConfigurations.minimumPlayersNeededToAllowASafeChest > np) {
             sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You can't have a safe chest if your guerrilla has less than "
-                    + GuerrillaConfigurations.minPSC + " members");
+                    + GuerrillaConfigurations.minimumPlayersNeededToAllowASafeChest + " members");
             return;
         }
         if (safeChest.isEmpty()) {
             safeChest.add(chlist);
             sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Safe chest added!");
-            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            guerrillaManager.getPlayerSetsSafe().remove(sender.getName());
             return;
         }
         sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You already have a safechest");
-        GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+        guerrillaManager.getPlayerSetsSafe().remove(sender.getName());
     }
 
     public void removeSafeChest(Chest chest, Player sender) {
         ArrayList<Integer> chlist = guerrillaManager.ChestToList(chest);
         if (safeChest.isEmpty()) {
             sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You have no chests!");
-            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            guerrillaManager.getPlayerSetsSafe().remove(sender.getName());
             return;
         } else if (safeChest.contains(chlist)) {
             sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "Safe chest removed");
-            GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+            guerrillaManager.getPlayerSetsSafe().remove(sender.getName());
             safeChest.remove(chlist);
             return;
         }
         sender.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "That is not your chest");
-        GuerrillaPlugin.playerSetsSafe.remove(sender.getName());
+        guerrillaManager.getPlayerSetsSafe().remove(sender.getName());
     }
 
     private int countPlayers() {
@@ -306,12 +319,12 @@ public class Guerrilla implements Serializable {
                             return false;
                         }
 
-                        if (GuerrillaPlugin.delayedClaimDataQueue.search(claimer.getName()) != null) {
+                        if (guerrillaManager.getDelayedClaimDataQueue().search(claimer.getName()) != null) {
                             claimer.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY
                                     + "Your faction is already claiming an enemy chunk! You can't do that twice");
                             return true;
                         }
-                        guerrillaPlugin.delayedClaim(this, guerrillaManager.getGuerrillaChunk(chunk), chunk, claimer);
+                        delayedClaim(guerrillaManager.getGuerrillaChunk(chunk), chunk, claimer, guerrillaPlugin);
                         guerrillaManager.getGuerrillaChunk(chunk).msggue(this.getName() + " is claiming part of your territory! Coords: "
                                 + chunk.getBlock(0, 0, 0).getX() + "," + chunk.getBlock(0, 0, 0).getZ() + " (x,z)");
                         msggue("Claiming enemy area, if you leave the chunk you will loose this dispute!");
@@ -497,6 +510,31 @@ public class Guerrilla implements Serializable {
         return false;
     }
 
+    private void delayedClaim(final Guerrilla gowner, final Chunk chunk, final Player claimer, GuerrillaPlugin guerrillaPlugin) {
+        ArrayList<Integer> clistn = new ArrayList<>(2);
+
+        Integer chunkX = chunk.getX();
+        Integer chunkZ = chunk.getZ();
+
+        clistn.add(chunkX);
+        clistn.add(chunkZ);
+
+        final ArrayList<Integer> clist = clistn;
+
+        DelayedClaimRunner task = injector.getInstance(DelayedClaimRunner.class);
+
+        task.setClaimer(claimer);
+        task.setGowner(gowner);
+        task.setClist(clist);
+        task.setGclaimer(this);
+
+        final Integer dclaimid = server.getScheduler()
+                .scheduleSyncDelayedTask(guerrillaPlugin, task,
+                        GuerrillaConfigurations.conqdelay);
+
+        guerrillaManager.getDelayedClaimDataQueue().addNode(new DelayedClaimData(clist, this, gowner, claimer.getName(), dclaimid));
+    }
+
     public String getLeader() {
         return leader;
     }
@@ -511,5 +549,65 @@ public class Guerrilla implements Serializable {
 
     public void setGuerrillaManager(GuerrillaManager guerrillaManager) {
         this.guerrillaManager = guerrillaManager;
+    }
+
+    public void setServer(Server server) {
+        this.server = server;
+    }
+
+    public ArrayList<ArrayList<Integer>> getTerritories() {
+        return territories;
+    }
+
+    public ArrayList<String> getPlayers() {
+        return players;
+    }
+
+    public ArrayList<ArrayList<Integer>> getPaymentChests() {
+        return paymentChests;
+    }
+
+    public ArrayList<String> getInvites() {
+        return invites;
+    }
+
+    public void setLeader(String leader) {
+        this.leader = leader;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public Date getQuitPunishmentDate() {
+        return quitPunishmentDate;
+    }
+
+    public void setQuitPunishmentDate(Date quitPunishmentDate) {
+        this.quitPunishmentDate = quitPunishmentDate;
+    }
+
+    public int getNumberOfClaimedChunks() {
+        return numberOfClaimedChunks;
+    }
+
+    public void setNumberOfClaimedChunks(int numberOfClaimedChunks) {
+        this.numberOfClaimedChunks = numberOfClaimedChunks;
+    }
+
+    public ArrayList<ArrayList<Integer>> getSafeChest() {
+        return safeChest;
+    }
+
+    public void setSafeChest(ArrayList<ArrayList<Integer>> safeChest) {
+        this.safeChest = safeChest;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

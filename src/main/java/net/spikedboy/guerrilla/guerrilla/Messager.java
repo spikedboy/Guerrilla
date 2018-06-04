@@ -17,10 +17,10 @@ public class Messager {
     @Inject
     private GuerrillaPlugin plugin;
 
+    @Inject
     private Server server;
 
     public Messager() {
-        server = plugin.getServer();
     }
 
     public void sendMessage(String msg) {
@@ -36,5 +36,9 @@ public class Messager {
 
     public void setPlugin(GuerrillaPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    public void setServer(Server server) {
+        this.server = server;
     }
 }

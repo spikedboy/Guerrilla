@@ -14,7 +14,7 @@
 #miniumplayersforasafechest: numero minimo de jugadores que tiene que haber en una guerrillaPlugin para que puedan crear un cofre seguro
 #guerrillaexpirytime: tiempo en (milisegundos? no me acuerdo) en que una faccion tarda en marcarse como inactiva y desaparecer (y con ella sus territorios)
 #explosionProtection: protecci�n de explosiones en territorio conquistado (true=encendido, false=apagado)
-guerrillaPlugin:
+guerrilla:
     itemid: 296
     chunkprice: 10
     paymenttime: 23999

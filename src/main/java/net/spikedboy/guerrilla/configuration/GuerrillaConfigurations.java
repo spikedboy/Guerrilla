@@ -12,7 +12,7 @@ public class GuerrillaConfigurations {
     public static int chunkmaintprice;
     public static int objectiveChunks;
     public static int maintmaxprice;
-    public static int minPSC;
+    public static int minimumPlayersNeededToAllowASafeChest;
     public static int expTime;
     public static long delay;
     public static String gworldname;

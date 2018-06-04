@@ -48,7 +48,7 @@ public class GuerrillaPlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerChat(AsyncPlayerChatEvent event) {
-        if (GuerrillaPlugin.togglePlayerChat.get(event.getPlayer().getName()) != null && GuerrillaPlugin.togglePlayerChat.get(event.getPlayer().getName()) == true) {
+        if (guerrillaManager.getTogglePlayerChat().get(event.getPlayer().getName()) != null && guerrillaManager.getTogglePlayerChat().get(event.getPlayer().getName()) == true) {
             guerrillaManager.getPlayerGuerrilla(event.getPlayer()).msggue(ChatColor.WHITE + "<" + event.getPlayer().getName() + "> " + event.getMessage());
             LOGGER.info("[Gchat] " + event.getPlayer().getName() + " " + event.getMessage());
             event.setCancelled(true);
@@ -78,19 +78,19 @@ public class GuerrillaPlayerListener implements Listener {
         final Player player = event.getPlayer();
         final Guerrilla guerrilla = guerrillaManager.getPlayerGuerrilla(player);
         if (guerrilla == null) return;
-        guerrilla.date = new Date();
+        guerrilla.setDate(new Date());
 
         //GuerrillaPlugin.LOGGER.info("" + guerrilla.howManyGuerrillaMembersOnline() + " " + Guerrilla.isBeingClaimed(guerrilla));
 
         if (guerrilla.isBeingClaimed() && (guerrilla.howManyGuerrillaMembersOnline() == 1)) {
-            guerrilla.quitPunishmentDate = new Date();
+            guerrilla.setQuitPunishmentDate(new Date());
         }
         int idClaim = guerrillaManager.getClaimingID(player.getName());
         if (idClaim != (-1)) {
-            DelayedClaimData dcd = GuerrillaPlugin.delayedClaimDataQueue.search(idClaim);
+            DelayedClaimData dcd = guerrillaManager.getDelayedClaimDataQueue().search(idClaim);
             dcd.getGuerrillaOwner().msggue("Your atacker quit! You're no longer being attacked");
             server.getScheduler().cancelTask(idClaim);
-            GuerrillaPlugin.delayedClaimDataQueue.removeNode(dcd);
+            guerrillaManager.getDelayedClaimDataQueue().removeNode(dcd);
         }
     }
 
@@ -117,12 +117,12 @@ public class GuerrillaPlayerListener implements Listener {
         if (fchunk == tchunk) return;
         Player player = event.getPlayer();
 
-        if (!GuerrillaPlugin.delayedClaimDataQueue.isEmpty()) {
+        if (!guerrillaManager.getDelayedClaimDataQueue().isEmpty()) {
             if (tchunk != fchunk) {
-                DelayedClaimData dcd = GuerrillaPlugin.delayedClaimDataQueue.search(player.getName());
+                DelayedClaimData dcd = guerrillaManager.getDelayedClaimDataQueue().search(player.getName());
                 //claimerleave
                 if (dcd != null) {
-                    GuerrillaPlugin.delayedClaimDataQueue.removeNode(dcd);
+                    guerrillaManager.getDelayedClaimDataQueue().removeNode(dcd);
                     Guerrilla gowner = guerrillaManager.getGuerrillaChunk(fchunk);
                     player.sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "You left the claim area! You loose! Good day sir");
                     gowner.msggue("Your atacker left!");
@@ -154,19 +154,19 @@ public class GuerrillaPlayerListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity().getPlayer();
-        DelayedClaimData dcd = GuerrillaPlugin.delayedClaimDataQueue.search(player.getName());
+        DelayedClaimData dcd = guerrillaManager.getDelayedClaimDataQueue().search(player.getName());
         if (dcd != null) {
             server.getScheduler().cancelTask(dcd.getThreadID());
             player.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You lost the territory dispute!");
-            GuerrillaPlugin.delayedClaimDataQueue.removeNode(dcd);
+            guerrillaManager.getDelayedClaimDataQueue().removeNode(dcd);
         }
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerLogin(PlayerLoginEvent event) {
         Guerrilla guerrilla = guerrillaManager.getPlayerGuerrilla(event.getPlayer());
-        if ((guerrilla != null) && (guerrilla.quitPunishmentDate != null)) {
-            guerrilla.quitPunishmentDate = null;
+        if ((guerrilla != null) && (guerrilla.getQuitPunishmentDate() != null)) {
+            guerrilla.setQuitPunishmentDate(null);
         }
     }
 
@@ -240,38 +240,38 @@ public class GuerrillaPlayerListener implements Listener {
 
             //setsafechests code
 
-            if (GuerrillaPlugin.playerSetsSafe.containsKey(pname)) {
-                Boolean b2 = GuerrillaPlugin.playerSetsSafe.get(pname);
+            if (guerrillaManager.getPlayerSetsSafe().containsKey(pname)) {
+                Boolean b2 = guerrillaManager.getPlayerSetsSafe().get(pname);
                 Guerrilla guerrilla = guerrillaManager.getPlayerGuerrilla(player);
                 if ((b2) && (event.getClickedBlock()).getTypeId() == 54) {
                     guerrilla.addSafeChest(chest, player);
-                    GuerrillaPlugin.playerSetsSafe.remove(event.getPlayer().getName());
+                    guerrillaManager.getPlayerSetsSafe().remove(event.getPlayer().getName());
                     return;
                 } else if ((!b2)) {
                     guerrilla.removeSafeChest(chest, player);
-                    GuerrillaPlugin.playerSetsSafe.remove(event.getPlayer().getName());
+                    guerrillaManager.getPlayerSetsSafe().remove(event.getPlayer().getName());
                     return;
                 }
             }
 
             //setpaymentchests code
 
-            if (GuerrillaPlugin.playerSetsBlock.containsKey(pname)) {
-                Boolean b2 = GuerrillaPlugin.playerSetsBlock.get(pname);
+            if (guerrillaManager.getPlayerSetsBlock().containsKey(pname)) {
+                Boolean b2 = guerrillaManager.getPlayerSetsBlock().get(pname);
                 if (b2) {
                     if (guerrillaManager.getPlayerGuerrilla(event.getPlayer()).addPaymentChest(chest)) {
-                        GuerrillaPlugin.playerSetsBlock.remove(event.getPlayer().getName());
+                        guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
                         event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "Payment chest set");
                     } else {
-                        GuerrillaPlugin.playerSetsBlock.remove(event.getPlayer().getName());
+                        guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
                         event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That chest is already set");
                     }
                 } else {
                     if (guerrillaManager.getPlayerGuerrilla(event.getPlayer()).removePaymentChest(chest)) {
-                        GuerrillaPlugin.playerSetsBlock.remove(event.getPlayer().getName());
+                        guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
                         event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "Payment chest removed");
                     } else {
-                        GuerrillaPlugin.playerSetsBlock.remove(event.getPlayer().getName());
+                        guerrillaManager.getPlayerSetsBlock().remove(event.getPlayer().getName());
                         event.getPlayer().sendMessage(ChatColor.DARK_RED + "[GuerrillaPlugin] " + ChatColor.GRAY + "That is not a payment chest");
                     }
                 }

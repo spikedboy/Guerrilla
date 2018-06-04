@@ -8,6 +8,7 @@ import net.spikedboy.guerrilla.listeners.GuerrillaBlockListener;
 import net.spikedboy.guerrilla.listeners.GuerrillaEntityListener;
 import net.spikedboy.guerrilla.listeners.GuerrillaPlayerListener;
 import net.spikedboy.guerrilla.listeners.GuerrillaWorldListener;
+import org.bukkit.Server;
 
 public class GuerrillaModule extends AbstractModule {
 
@@ -15,8 +16,14 @@ public class GuerrillaModule extends AbstractModule {
 
     @Override
     public void configure() {
+        if (guerrillaPluginSingletonInstance == null) {
+            throw new IllegalStateException();
+        }
+
         bind(GuerrillaPlugin.class).toInstance(guerrillaPluginSingletonInstance);
         bind(CommandExecutor.class).to(OldCommandExecutor.class);
+
+        bind(Server.class).toInstance(guerrillaPluginSingletonInstance.getServer());
 
         bind(GuerrillaBlockListener.class).toInstance(new GuerrillaBlockListener(guerrillaPluginSingletonInstance));
         bind(GuerrillaEntityListener.class).toInstance(new GuerrillaEntityListener(guerrillaPluginSingletonInstance));

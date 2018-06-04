@@ -5,55 +5,39 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import net.spikedboy.guerrilla.commands.CommandExecutor;
 import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
+import net.spikedboy.guerrilla.guerrilla.ChargePaymentsRunnable;
 import net.spikedboy.guerrilla.guerrilla.Guerrilla;
 import net.spikedboy.guerrilla.guerrilla.GuerrillaManager;
 import net.spikedboy.guerrilla.guerrilla.Messager;
 import net.spikedboy.guerrilla.guice.GuerrillaModule;
-import net.spikedboy.guerrilla.landclaim.DelayedClaimData;
-import net.spikedboy.guerrilla.landclaim.DelayedClaimDataQueue;
 import net.spikedboy.guerrilla.listeners.GuerrillaBlockListener;
 import net.spikedboy.guerrilla.listeners.GuerrillaEntityListener;
 import net.spikedboy.guerrilla.listeners.GuerrillaPlayerListener;
 import net.spikedboy.guerrilla.listeners.GuerrillaWorldListener;
-import org.bukkit.ChatColor;
-import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 public class GuerrillaPlugin extends JavaPlugin {
 
     private static final Logger LOGGER = Logger.getLogger("Minecraft");
 
-    public static final Map<String, Boolean> playerSetsBlock = new HashMap<>();
-
-    public static final Map<String, Boolean> playerSetsSafe = new HashMap<>();
-
-    public static final DelayedClaimDataQueue delayedClaimDataQueue = new DelayedClaimDataQueue();
-
-    public static final Map<String, Boolean> togglePlayerChat = new HashMap<>();
-
-    public static String winnerGuerrillaName;
-    public static boolean stateWon;
-
     private static long initFirstPaymentDelay;
     private static int paymentThreadId;
 
-    private Server serverInstance;
     private FileConfiguration config;
+
+    @Inject
+    private Server serverInstance;
 
     @Inject
     private CommandExecutor commandExecutor;
@@ -76,11 +60,13 @@ public class GuerrillaPlugin extends JavaPlugin {
     @Inject
     private GuerrillaManager guerrillaManager;
 
+    @Inject
+    private Injector injector;
+
     @Override
     public void onEnable() {
         initialiceGuiceDependencyInjectionSystem();
 
-        initialiceServerandGuerrillaInstances();
         saveDefaultConfig();
         config = getConfig();
 
@@ -111,16 +97,6 @@ public class GuerrillaPlugin extends JavaPlugin {
         injector.injectMembers(this);
     }
 
-    private void initialiceServerandGuerrillaInstances() {
-        Server server = getServer();
-
-        if (server != null) {
-            serverInstance = server;
-        } else {
-            LOGGER.info("Server == null");
-        }
-    }
-
     private void readConfigIntoVars() {
         GuerrillaConfigurations.itemid = config.getInt("guerrilla.itemid", 296);
         GuerrillaConfigurations.chunkprice = config.getInt("guerrilla.chunkprice", 16);
@@ -136,12 +112,12 @@ public class GuerrillaPlugin extends JavaPlugin {
         GuerrillaConfigurations.nchunkpay = config.getInt("guerrilla.nchunksminmaintenance", 10);
         GuerrillaConfigurations.objectiveChunks = config.getInt("guerrilla.chunkobjective", 780);
         GuerrillaConfigurations.maintmaxprice = config.getInt("guerrilla.maxmaintenanceprice", 44);
-        GuerrillaConfigurations.minPSC = config.getInt("guerrilla.miniumplayersforasafechest", 5);
+        GuerrillaConfigurations.minimumPlayersNeededToAllowASafeChest = config.getInt("guerrilla.miniumplayersforasafechest", 5);
         GuerrillaConfigurations.expTime = config.getInt("guerrilla.guerrillaexpirytime", 604800000);
         GuerrillaConfigurations.tntProtection = config.getBoolean("guerrilla.explostionProtection", false);
 
-        winnerGuerrillaName = config.getString("guerrilla.winner", "");
-        stateWon = config.getBoolean("guerrilla.ismatchwon", false);
+        GuerrillaManager.setWinnerGuerrillaName(config.getString("guerrilla.winner", ""));
+        GuerrillaManager.setStateWon(config.getBoolean("guerrilla.ismatchwon", false));
     }
 
     private void registerListeners(PluginManager pm) {
@@ -172,11 +148,11 @@ public class GuerrillaPlugin extends JavaPlugin {
 
     private void removeMissingPaymentChests() {
         for (Guerrilla guerrilla : guerrillaManager.getGuerrillaList()) {
-            for (ArrayList<Integer> chestc : guerrilla.paymentChests) {
+            for (ArrayList<Integer> chestc : guerrilla.getPaymentChests()) {
                 if (serverInstance.getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestc.get(0),
                         chestc.get(1), chestc.get(2)).getType() != Material.CHEST) {
 
-                    guerrilla.paymentChests.remove(chestc);
+                    guerrilla.getPaymentChests().remove(chestc);
                     guerrilla.msggue("A missing payment chest was removed");
                     LOGGER.info("[Guerrilla] A payment chest was removed because the chest was missing");
                 }
@@ -185,25 +161,8 @@ public class GuerrillaPlugin extends JavaPlugin {
     }
 
     private void initPaymentThread() {
-        paymentThreadId = this.getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
-            public void run() {
-                if (guerrillaManager.checkWinners() != null) {
-                    stateWon = true;
-                    winnerGuerrillaName = guerrillaManager.checkWinners().getName();
-                    config.set("guerrilla.ismatchwon", true);
-                    config.set("guerrilla.winner", winnerGuerrillaName);
-                    saveConfig();
-                    serverInstance.broadcastMessage(ChatColor.GOLD + "[GuerrillaWrittenInGold] " + winnerGuerrillaName + " HAS WON THIS MATCH!!!!!! GOOD DAY TO YOU");
-                    return;
-                }
-                guerrillaManager.chargeGuerrillasMaintenance();
-                try {
-                    guerrillaManager.printmap();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, initFirstPaymentDelay, GuerrillaConfigurations.delay);
+        ChargePaymentsRunnable task = injector.getInstance(ChargePaymentsRunnable.class);
+        paymentThreadId = this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, initFirstPaymentDelay, GuerrillaConfigurations.delay);
     }
 
     @Override
@@ -242,47 +201,6 @@ public class GuerrillaPlugin extends JavaPlugin {
         return commandExecutor.processCommands(sender, cmd, commandLabel, args);
     }
 
-    public void delayedClaim(final Guerrilla gclaimer, final Guerrilla gowner, final Chunk chunk, final Player claimer) {
-
-        ArrayList<Integer> clistn = new ArrayList<>(2);
-
-        Integer chunkX = chunk.getX();
-        Integer chunkZ = chunk.getZ();
-
-        clistn.add(chunkX);
-        clistn.add(chunkZ);
-
-        final ArrayList<Integer> clist = clistn;
-
-        final Integer dclaimid = serverInstance.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-            public void run() {
-                DelayedClaimData dcd = delayedClaimDataQueue.search(claimer.getName());
-
-                if (claimer.getInventory().contains(GuerrillaConfigurations.itemid, (GuerrillaConfigurations.chunkprice * GuerrillaConfigurations.conqmulti))) {
-                    guerrillaManager.removeInventoryItems(claimer.getInventory(), Material.getMaterial(GuerrillaConfigurations.itemid),
-                            (GuerrillaConfigurations.chunkprice * GuerrillaConfigurations.conqmulti));
-                } else {
-                    claimer.sendMessage(Messager.GUERRILLA_MESSAGE_PREFIX + "You pig! You dropped the payment? you don't get the chunk!");
-                    delayedClaimDataQueue.removeNode(dcd);
-                    return;
-                }
-                if (stateWon) {
-                    delayedClaimDataQueue.removeNode(dcd);
-                    return;
-                }
-                gowner.numberOfClaimedChunks--;
-                gowner.territories.remove(clist);
-                gclaimer.numberOfClaimedChunks++;
-                gclaimer.territories.add(clist);
-                delayedClaimDataQueue.removeNode(dcd);
-                new Messager().sendMessage(gclaimer.getName() + " took a part of territory from " + gowner.getName() + "!");
-
-            }
-        }, GuerrillaConfigurations.conqdelay);
-
-        delayedClaimDataQueue.addNode(new DelayedClaimData(clist, gclaimer, gowner, claimer.getName(), dclaimid));
-    }
-
     public void setCommandExecutor(CommandExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
     }
@@ -306,4 +224,9 @@ public class GuerrillaPlugin extends JavaPlugin {
     public void setMessager(Messager messager) {
         this.messager = messager;
     }
+
+    public void setServerInstance(Server serverInstance) {
+        this.serverInstance = serverInstance;
+    }
+
 }

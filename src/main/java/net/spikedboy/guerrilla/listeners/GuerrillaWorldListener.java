@@ -31,11 +31,11 @@ public class GuerrillaWorldListener implements Listener {
         try {
             //GuerrillaPlugin.LOGGER.info("[Guerrilla] Saving..");
             for (Guerrilla guerrilla : guerrillaManager.getGuerrillaList()) {
-                for (ArrayList<Integer> chestc : guerrilla.paymentChests) {
+                for (ArrayList<Integer> chestc : guerrilla.getPaymentChests()) {
                     if (guerrillaPlugin.getServer().getWorld(GuerrillaConfigurations.gworldname).getBlockAt(chestc.get(0),
                             chestc.get(1), chestc.get(2)).getType() != Material.CHEST) {
 
-                        guerrilla.paymentChests.remove(chestc);
+                        guerrilla.getPaymentChests().remove(chestc);
                         guerrilla.msggue("A missing payment chest was removed");
                         LOGGER.info("[Guerrilla] A payment chest was removed because the chest was missing");
                     }

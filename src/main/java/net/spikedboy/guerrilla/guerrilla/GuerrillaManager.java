@@ -2,9 +2,9 @@ package net.spikedboy.guerrilla.guerrilla;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import net.spikedboy.guerrilla.GuerrillaPlugin;
 import net.spikedboy.guerrilla.configuration.GuerrillaConfigurations;
 import net.spikedboy.guerrilla.landclaim.DelayedClaimData;
+import net.spikedboy.guerrilla.landclaim.DelayedClaimDataQueue;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -25,6 +25,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @Singleton
@@ -32,13 +34,41 @@ public class GuerrillaManager {
 
     private static final Logger LOGGER = Logger.getLogger("Minecraft");
 
-    public static final String GUERRILLA_SAFE_BIN = "GuerrillaSafe.bin";
-    private final String SAVED_GUERRILLAS_FILENAME = "Guerrilla.bin";
+    private static final String GUERRILLA_SAFE_BIN = "GuerrillaSafe.bin";
+    private static String winnerGuerrillaName;
+    private static boolean stateWon;
+    private static final String SAVED_GUERRILLAS_FILENAME = "Guerrilla.bin";
+
     @Inject
     private Messager messager;
 
+    private final Map<String, Boolean> playerSetsSafe = new HashMap<>();
+    private final DelayedClaimDataQueue delayedClaimDataQueue = new DelayedClaimDataQueue();
+    private final Map<String, Boolean> togglePlayerChat = new HashMap<>();
+    private final Map<String, Boolean> playerSetsBlock = new HashMap<>();
+
     private ArrayList<Guerrilla> guerrillaList = new ArrayList<>();
     private ArrayList<ArrayList<Integer>> safeChunks = new ArrayList<>();
+
+    public static String getGuerrillaSafeBin() {
+        return GUERRILLA_SAFE_BIN;
+    }
+
+    public static String getWinnerGuerrillaName() {
+        return winnerGuerrillaName;
+    }
+
+    public static void setWinnerGuerrillaName(String winnerGuerrillaName) {
+        GuerrillaManager.winnerGuerrillaName = winnerGuerrillaName;
+    }
+
+    public static boolean isStateWon() {
+        return stateWon;
+    }
+
+    public static void setStateWon(boolean stateWon) {
+        GuerrillaManager.stateWon = stateWon;
+    }
 
     public Guerrilla getGuerrillaByName(String name) {
         for (Guerrilla guerrilla : guerrillaList) {
@@ -51,7 +81,7 @@ public class GuerrillaManager {
 
     public Guerrilla checkWinners() {
         for (Guerrilla guerrilla : guerrillaList) {
-            if (guerrilla.numberOfClaimedChunks >= GuerrillaConfigurations.objectiveChunks) {
+            if (guerrilla.getNumberOfClaimedChunks() >= GuerrillaConfigurations.objectiveChunks) {
                 return guerrilla;
             }
         }
@@ -63,7 +93,7 @@ public class GuerrillaManager {
         BufferedWriter out = new BufferedWriter(fstream);
         int contador = 0;
         for (Guerrilla guerrilla : guerrillaList) {
-            for (ArrayList<Integer> clist : guerrilla.territories) {
+            for (ArrayList<Integer> clist : guerrilla.getTerritories()) {
                 Integer ClistX = clist.get(0);
                 Integer ClistZ = clist.get(1);
                 String gname = guerrilla.getName();
@@ -83,16 +113,16 @@ public class GuerrillaManager {
                 sender.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "You have no guerrilla");
                 return;
             }
-            if (guerrilla.date == null) guerrilla.date = now;
+            if (guerrilla.getDate() == null) guerrilla.setDate(now);
             sender.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + guerrilla.getName() + "'s info:");
-            sender.sendMessage(ChatColor.DARK_AQUA + " Chunks claimed: " + ChatColor.WHITE + guerrilla.numberOfClaimedChunks);
-            sender.sendMessage(ChatColor.DARK_AQUA + " Payment chests: " + ChatColor.WHITE + guerrilla.paymentChests.size());
+            sender.sendMessage(ChatColor.DARK_AQUA + " Chunks claimed: " + ChatColor.WHITE + guerrilla.getNumberOfClaimedChunks());
+            sender.sendMessage(ChatColor.DARK_AQUA + " Payment chests: " + ChatColor.WHITE + guerrilla.getPaymentChests().size());
             sender.sendMessage(ChatColor.DARK_AQUA + " Last login: " + ChatColor.WHITE
-                    + ((now.getTime() - guerrilla.date.getTime()) / 3600000) + ChatColor.DARK_AQUA + "h ago");
+                    + ((now.getTime() - guerrilla.getDate().getTime()) / 3600000) + ChatColor.DARK_AQUA + "h ago");
 
             sender.sendMessage(ChatColor.DARK_AQUA + " Members:");
 
-            for (String playername : guerrilla.players) {
+            for (String playername : guerrilla.getPlayers()) {
                 if (guerrilla.getLeader() == playername) {
                     sender.sendMessage("  " + playername + (ChatColor.LIGHT_PURPLE + " (leader)"));
                 } else {
@@ -105,18 +135,18 @@ public class GuerrillaManager {
                 sender.sendMessage(args + " doesn't exist");
                 return;
             } else {
-                if (guerrilla.date == null) guerrilla.date = now;
+                if (guerrilla.getDate() == null) guerrilla.setDate(now);
                 sender.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + guerrilla.getName() + "'s info:");
-                sender.sendMessage(ChatColor.DARK_AQUA + " Chunks claimed: " + ChatColor.WHITE + guerrilla.numberOfClaimedChunks);
-                sender.sendMessage(ChatColor.DARK_AQUA + " Payment chests: " + ChatColor.WHITE + guerrilla.paymentChests.size());
+                sender.sendMessage(ChatColor.DARK_AQUA + " Chunks claimed: " + ChatColor.WHITE + guerrilla.getNumberOfClaimedChunks());
+                sender.sendMessage(ChatColor.DARK_AQUA + " Payment chests: " + ChatColor.WHITE + guerrilla.getPaymentChests().size());
                 sender.sendMessage(ChatColor.DARK_AQUA + " Last login: " + ChatColor.WHITE
-                        + ((now.getTime() - guerrilla.date.getTime()) / 3600000) + ChatColor.DARK_AQUA + "h ago");
-                if (guerrilla.quitPunishmentDate != null) {
+                        + ((now.getTime() - guerrilla.getDate().getTime()) / 3600000) + ChatColor.DARK_AQUA + "h ago");
+                if (guerrilla.getQuitPunishmentDate() != null) {
                     sender.sendMessage(ChatColor.DARK_AQUA + " Punished: " + ChatColor.WHITE
-                            + (((now.getTime() - guerrilla.quitPunishmentDate.getTime()) < GuerrillaConfigurations.delay)));
+                            + (((now.getTime() - guerrilla.getQuitPunishmentDate().getTime()) < GuerrillaConfigurations.delay)));
                 }
                 sender.sendMessage(ChatColor.DARK_AQUA + " Members:");
-                for (String playername : guerrilla.players) {
+                for (String playername : guerrilla.getPlayers()) {
                     if (guerrilla.getLeader().equals(playername)) {
                         sender.sendMessage("  " + playername + (ChatColor.LIGHT_PURPLE + " (leader)"));
                     } else {
@@ -134,7 +164,7 @@ public class GuerrillaManager {
         clist.add(chunkX);
         clist.add(chunkZ);
         for (Guerrilla guerrilla : guerrillaList) {
-            if (guerrilla.territories.contains(clist)) {
+            if (guerrilla.getTerritories().contains(clist)) {
                 return guerrilla;
             }
         }
@@ -143,7 +173,7 @@ public class GuerrillaManager {
 
     public Guerrilla getPlayerGuerrilla(Player player) {
         for (Guerrilla guerrilla : guerrillaList) {
-            if (guerrilla.players.contains(player.getName())) {
+            if (guerrilla.getPlayers().contains(player.getName())) {
                 return guerrilla;
             }
         }
@@ -152,7 +182,7 @@ public class GuerrillaManager {
 
     Guerrilla getPlayerGuerrilla(String player) {
         for (Guerrilla guerrilla : guerrillaList) {
-            if (guerrilla.players.contains(player)) {
+            if (guerrilla.getPlayers().contains(player)) {
                 return guerrilla;
             }
         }
@@ -162,7 +192,7 @@ public class GuerrillaManager {
     public boolean isLeader(Player player) {
         Guerrilla guerrilla = getPlayerGuerrilla(player);
         //GuerrillaPlugin.LOGGER.info(player.getName() + " " + guerrilla.leader + " " + guerrilla.getLeader() + " " + guerrilla.leader.equals(player.getName()));
-        return guerrilla.leader.equals(player.getName());
+        return guerrilla.getLeader().equals(player.getName());
     }
 
     public boolean leave(Player sender) {
@@ -172,7 +202,7 @@ public class GuerrillaManager {
         }
         Guerrilla guerrilla = getPlayerGuerrilla(sender);
         if ((guerrilla != null) && ((!isLeader(sender)))) {
-            guerrilla.players.remove(sender.getName());
+            guerrilla.getPlayers().remove(sender.getName());
             sender.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "You left the "
                     + guerrilla.getName() + " guerrilla!");
             return true;
@@ -187,9 +217,9 @@ public class GuerrillaManager {
             sender.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "That guerrilla doesn't exist");
             return false;
         }
-        if (guerrilla.invites.contains(sender.getName())) {
+        if (guerrilla.getInvites().contains(sender.getName())) {
             guerrilla.msggue(sender.getName() + "Declined his invite");
-            guerrilla.invites.remove(sender.getName());
+            guerrilla.getInvites().remove(sender.getName());
             sender.sendMessage(ChatColor.DARK_RED + "[Guerrilla] " + ChatColor.GRAY + "Invitation declined");
             return true;
         }
@@ -300,7 +330,7 @@ public class GuerrillaManager {
         clist.add(chunkX);
         clist.add(chunkZ);
         if (owner != null) {
-            owner.territories.remove(clist);
+            owner.getTerritories().remove(clist);
         }
         if (safeChunks.contains(clist)) {
             return;
@@ -331,7 +361,7 @@ public class GuerrillaManager {
     }
 
     public int getClaimingID(String pname) {
-        DelayedClaimData dcd = GuerrillaPlugin.delayedClaimDataQueue.search(pname);
+        DelayedClaimData dcd = delayedClaimDataQueue.search(pname);
         if (dcd != null) {
             return (dcd.getThreadID());
         } else {
@@ -349,8 +379,8 @@ public class GuerrillaManager {
         for (int i = index; i < (guerrillaList.size()); i++) {
             if (i > (guerrillaList.size() - 1)) break;
             Guerrilla guerrilla = guerrillaList.get(i);
-            sender.sendMessage("- " + guerrilla.name + ChatColor.LIGHT_PURPLE + " Leader: " + ChatColor.WHITE
-                    + guerrilla.getLeader() + ChatColor.LIGHT_PURPLE + " Chunks: " + ChatColor.WHITE + guerrilla.numberOfClaimedChunks
+            sender.sendMessage("- " + guerrilla.getName() + ChatColor.LIGHT_PURPLE + " Leader: " + ChatColor.WHITE
+                    + guerrilla.getLeader() + ChatColor.LIGHT_PURPLE + " Chunks: " + ChatColor.WHITE + guerrilla.getNumberOfClaimedChunks()
                     + guerrilla.getOnlinePlayersText());
         }
     }
@@ -375,10 +405,10 @@ public class GuerrillaManager {
 
     public Guerrilla getGuerrillaSafeChest(Chest chest) {
         for (Guerrilla g1 : guerrillaList) {
-            if (g1.safeChest == null) continue;
-            if (g1.safeChest.isEmpty()) continue;
+            if (g1.getSafeChest() == null) continue;
+            if (g1.getSafeChest().isEmpty()) continue;
             ArrayList<Integer> chlist = ChestToList(chest);
-            if (g1.safeChest.get(0).equals(chlist)) {
+            if (g1.getSafeChest().get(0).equals(chlist)) {
                 return getGuerrillaChunk(chest.getBlock().getChunk());
             }
         }
@@ -437,5 +467,21 @@ public class GuerrillaManager {
 
     public void setMessager(Messager messager) {
         this.messager = messager;
+    }
+
+    public Map<String, Boolean> getPlayerSetsSafe() {
+        return playerSetsSafe;
+    }
+
+    public DelayedClaimDataQueue getDelayedClaimDataQueue() {
+        return delayedClaimDataQueue;
+    }
+
+    public Map<String, Boolean> getTogglePlayerChat() {
+        return togglePlayerChat;
+    }
+
+    public Map<String, Boolean> getPlayerSetsBlock() {
+        return playerSetsBlock;
     }
 }

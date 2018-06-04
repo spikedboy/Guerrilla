@@ -1,5 +1,6 @@
-name: GuerrillaPlugin
-guerrillaPlugin: net.spikedboy.guerrilla.GuerrillaPlugin
+name: Guerrilla
+main: net.spikedboy.guerrilla.GuerrillaPlugin
+version: 0.3
 commands:
    gc:
       description: Toggles guerrilla chat
